@@ -80,16 +80,27 @@ export const DEFAULT_CATEGORIES: DefaultCategorySeed[] = [
   },
 ];
 
-export async function seedDefaultCategories(db: SQLite.SQLiteDatabase): Promise<void> {
+export async function seedDefaultCategories(
+  db: SQLite.SQLiteDatabase,
+  options?: { inTransaction?: boolean }
+): Promise<void> {
   const now = new Date().toISOString();
 
-  await db.withTransactionAsync(async () => {
+  const insertAll = async (executor: SQLite.SQLiteDatabase) => {
     for (const cat of DEFAULT_CATEGORIES) {
-      await db.runAsync(
+      await executor.runAsync(
         `INSERT OR IGNORE INTO categories (id, name, icon, color, type, is_default, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?);`,
         [cat.id, cat.name, cat.icon, cat.color, cat.type, cat.is_default, now]
       );
     }
-  });
+  };
+
+  if (options?.inTransaction) {
+    await insertAll(db);
+  } else {
+    await db.withTransactionAsync(async () => {
+      await insertAll(db);
+    });
+  }
 }

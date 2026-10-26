@@ -1,4 +1,4 @@
-import { getDatabase } from '@/db';
+import { getDatabase, runInTransaction } from '@/db';
 import { Budget, BudgetWithUsage } from '@/types';
 import { getMonthDateRange } from '@/utils/date';
 import { generateId } from '@/utils/uuid';
@@ -46,37 +46,39 @@ export const BudgetRepository: IBudgetRepository = {
 
   async upsert(input: UpsertBudgetInput): Promise<Budget> {
     const db = await getDatabase();
-    const existing = await db.getFirstAsync<Budget>(
-      `SELECT * FROM budgets WHERE category_id = ? AND month = ?;`,
-      [input.category_id, input.month]
-    );
-
     const cents = Math.trunc(input.limit_cents);
 
-    if (existing) {
-      await db.runAsync(
-        `UPDATE budgets SET limit_cents = ? WHERE id = ?;`,
-        [cents, existing.id]
+    return runInTransaction(db, async (txn) => {
+      const existing = await txn.getFirstAsync<Budget>(
+        `SELECT * FROM budgets WHERE category_id = ? AND month = ?;`,
+        [input.category_id, input.month]
       );
+
+      if (existing) {
+        await txn.runAsync(
+          `UPDATE budgets SET limit_cents = ? WHERE id = ?;`,
+          [cents, existing.id]
+        );
+        return {
+          ...existing,
+          limit_cents: cents,
+        };
+      }
+
+      const id = generateId();
+      await txn.runAsync(
+        `INSERT INTO budgets (id, category_id, month, limit_cents)
+         VALUES (?, ?, ?, ?);`,
+        [id, input.category_id, input.month, cents]
+      );
+
       return {
-        ...existing,
+        id,
+        category_id: input.category_id,
+        month: input.month,
         limit_cents: cents,
       };
-    }
-
-    const id = generateId();
-    await db.runAsync(
-      `INSERT INTO budgets (id, category_id, month, limit_cents)
-       VALUES (?, ?, ?, ?);`,
-      [id, input.category_id, input.month, cents]
-    );
-
-    return {
-      id,
-      category_id: input.category_id,
-      month: input.month,
-      limit_cents: cents,
-    };
+    });
   },
 
   async delete(id: string): Promise<void> {

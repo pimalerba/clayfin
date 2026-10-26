@@ -1,4 +1,4 @@
-import { getDatabase } from '@/db';
+import { getDatabase, runInTransaction } from '@/db';
 import { Goal, GoalContribution, GoalWithProgress } from '@/types';
 import { formatCentsToBRL } from '@/utils/currency';
 import { generateId } from '@/utils/uuid';
@@ -132,45 +132,98 @@ export const GoalRepository: IGoalRepository = {
       throw new Error('O valor do aporte/retirada deve ser diferente de zero.');
     }
 
-    if (cents > 0) {
-      const availableInAccount =
-        await ReportRepository.getAvailableAccountBalance();
-      if (cents > availableInAccount) {
-        throw new Error(
-          `Saldo insuficiente em conta. Você possui ${formatCentsToBRL(
-            Math.max(0, availableInAccount)
-          )} disponível para guardar.`
-        );
+    return runInTransaction(db, async (txn) => {
+      const goal = await txn.getFirstAsync<Goal>(
+        `SELECT * FROM goals WHERE id = ?;`,
+        [input.goal_id]
+      );
+      if (!goal) {
+        throw new Error('Meta não encontrada.');
       }
-    } else {
-      const goal = await this.getByIdWithProgress(input.goal_id);
-      const currentInGoal = Math.max(0, goal?.current_cents ?? 0);
-      if (Math.abs(cents) > currentInGoal) {
-        throw new Error(
-          `Valor acima do disponível no cofrinho (${formatCentsToBRL(
-            currentInGoal
-          )}).`
+
+      if (cents > 0) {
+        const availableInAccount =
+          await ReportRepository.getAvailableAccountBalance(txn);
+        if (cents > availableInAccount) {
+          throw new Error(
+            `Saldo insuficiente em conta. Você possui ${formatCentsToBRL(
+              Math.max(0, availableInAccount)
+            )} disponível para guardar.`
+          );
+        }
+      } else {
+        const currentSavedRow = await txn.getFirstAsync<{
+          current_cents: number;
+        }>(
+          `SELECT COALESCE(SUM(amount_cents), 0) AS current_cents
+           FROM goal_contributions
+           WHERE goal_id = ?;`,
+          [input.goal_id]
         );
+        const currentInGoal = Math.max(0, currentSavedRow?.current_cents ?? 0);
+        if (Math.abs(cents) > currentInGoal) {
+          throw new Error(
+            `Valor acima do disponível no cofrinho (${formatCentsToBRL(
+              currentInGoal
+            )}).`
+          );
+        }
       }
-    }
 
-    await db.runAsync(
-      `INSERT INTO goal_contributions (id, goal_id, amount_cents, date, created_at)
-       VALUES (?, ?, ?, ?, ?);`,
-      [id, input.goal_id, cents, input.date, now]
-    );
+      await txn.runAsync(
+        `INSERT INTO goal_contributions (id, goal_id, amount_cents, date, created_at)
+         VALUES (?, ?, ?, ?, ?);`,
+        [id, input.goal_id, cents, input.date, now]
+      );
 
-    return {
-      id,
-      goal_id: input.goal_id,
-      amount_cents: cents,
-      date: input.date,
-      created_at: now,
-    };
+      return {
+        id,
+        goal_id: input.goal_id,
+        amount_cents: cents,
+        date: input.date,
+        created_at: now,
+      };
+    });
   },
 
   async deleteContribution(id: string): Promise<void> {
     const db = await getDatabase();
-    await db.runAsync(`DELETE FROM goal_contributions WHERE id = ?;`, [id]);
+    return runInTransaction(db, async (txn) => {
+      const contribution = await txn.getFirstAsync<GoalContribution>(
+        `SELECT * FROM goal_contributions WHERE id = ?;`,
+        [id]
+      );
+      if (!contribution) {
+        return;
+      }
+
+      if (contribution.amount_cents > 0) {
+        const goalRow = await txn.getFirstAsync<{ current_cents: number }>(
+          `SELECT COALESCE(SUM(amount_cents), 0) AS current_cents
+           FROM goal_contributions
+           WHERE goal_id = ?;`,
+          [contribution.goal_id]
+        );
+        const currentGoalCents = goalRow?.current_cents ?? 0;
+        if (currentGoalCents - contribution.amount_cents < 0) {
+          throw new Error(
+            'Não é possível excluir este aporte pois o saldo da meta ficaria negativo.'
+          );
+        }
+      } else if (contribution.amount_cents < 0) {
+        const availableInAccount =
+          await ReportRepository.getAvailableAccountBalance(txn);
+        const neededBalance = Math.abs(contribution.amount_cents);
+        if (neededBalance > availableInAccount) {
+          throw new Error(
+            `Saldo insuficiente em conta para desfazer este resgate. Necessário: ${formatCentsToBRL(
+              neededBalance
+            )}.`
+          );
+        }
+      }
+
+      await txn.runAsync(`DELETE FROM goal_contributions WHERE id = ?;`, [id]);
+    });
   },
 };
