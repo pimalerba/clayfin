@@ -40,24 +40,6 @@ export default function TabsLayout() {
           title: 'Mais',
         }}
       />
-      <Tabs.Screen
-        name="goals"
-        options={{
-          title: 'Metas',
-        }}
-      />
-      <Tabs.Screen
-        name="reports"
-        options={{
-          title: 'Relatórios',
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Ajustes',
-        }}
-      />
     </Tabs>
   );
 }

@@ -103,7 +103,7 @@ export default function GoalFormScreen() {
           style: 'destructive',
           onPress: async () => {
             await deleteMutation.mutateAsync(params.id!);
-            router.replace('/(tabs)/goals');
+            router.replace('/(tabs)/more/goals');
           },
         },
       ]

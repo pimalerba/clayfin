@@ -32,6 +32,14 @@ export default function ReportsScreen() {
   const theme = useAppTheme();
   const { selectedMonth, setSelectedMonth } = useUIStore();
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/more');
+    }
+  };
+
   const { data: summary, isLoading: loadingSummary } =
     useMonthlySummary(selectedMonth);
   const { data: categorySlices = [], isLoading: loadingSlices } =
@@ -83,7 +91,7 @@ export default function ReportsScreen() {
       >
         <View style={styles.headerRow}>
           <Pressable
-            onPress={() => router.push('/(tabs)/more')}
+            onPress={handleBack}
             accessibilityRole="button"
             accessibilityLabel="Voltar para Mais"
             style={[

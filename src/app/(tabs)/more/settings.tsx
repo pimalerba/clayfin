@@ -41,6 +41,14 @@ export default function SettingsScreen() {
   const importMutation = useImportBackup();
   const clearAllMutation = useClearAllData();
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/more');
+    }
+  };
+
   const handleExportBackup = async () => {
     try {
       const payload = await exportMutation.mutateAsync();
@@ -174,7 +182,7 @@ export default function SettingsScreen() {
       >
         <View style={styles.headerRow}>
           <Pressable
-            onPress={() => router.push('/(tabs)/more')}
+            onPress={handleBack}
             accessibilityRole="button"
             accessibilityLabel="Voltar para Mais"
             style={[

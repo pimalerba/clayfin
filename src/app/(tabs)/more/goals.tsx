@@ -22,6 +22,14 @@ export default function GoalsScreen() {
   const { data: goals = [], isLoading } = useGoals();
   const { data: availableAccountCents = 0 } = useAvailableAccountBalance();
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/more');
+    }
+  };
+
   const totalSavedCents = goals.reduce(
     (acc, g) => acc + Math.max(0, g.current_cents),
     0
@@ -40,7 +48,7 @@ export default function GoalsScreen() {
         <View style={styles.headerRow}>
           <View style={styles.titleRow}>
             <Pressable
-              onPress={() => router.push('/(tabs)/more')}
+              onPress={handleBack}
               accessibilityRole="button"
               accessibilityLabel="Voltar para Mais"
               style={[

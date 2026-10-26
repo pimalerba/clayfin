@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import {
+  Platform,
   Pressable,
   ScrollView,
   SectionList,
@@ -7,8 +8,11 @@ import {
   Text,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router, useScrollToTop } from 'expo-router';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Plus, Search, Receipt, X } from 'lucide-react-native';
 import { useAppTheme } from '@/theme';
 import { useCategories, useTransactions } from '@/hooks';
@@ -35,6 +39,9 @@ interface DaySection {
 
 export default function TransactionsScreen() {
   const theme = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const sectionListRef = useRef<SectionList<TransactionWithCategory, DaySection>>(null);
+  useScrollToTop(sectionListRef as any);
   const {
     selectedMonth,
     setSelectedMonth,
@@ -91,7 +98,14 @@ export default function TransactionsScreen() {
       edges={['top']}
       style={[styles.safe, { backgroundColor: theme.colors.background }]}
     >
-      <View style={styles.container}>
+      {/*
+        Escolha de integração com NativeTabs no iOS (doc Expo Router v58):
+        Como a SectionList fica abaixo do cabeçalho fixo (MonthSelector, busca e chips horizontais),
+        optamos por `disableTransparentOnScrollEdge` no Trigger "transactions" em `_layout.ios.tsx`
+        combinado com `collapsable={false}` no container, `contentInsetAdjustmentBehavior="automatic"`
+        e `useScrollToTop(sectionListRef)` para manter filtros fixos no topo e scroll-to-top ao tocar na aba ativa.
+      */}
+      <View style={styles.container} collapsable={false}>
         <View style={styles.headerRow}>
           <Text
             style={[theme.typography.h1, { color: theme.colors.textPrimary }]}
@@ -204,9 +218,11 @@ export default function TransactionsScreen() {
           />
         ) : (
           <SectionList
+            ref={sectionListRef}
             sections={sections}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
+            contentInsetAdjustmentBehavior="automatic"
             contentContainerStyle={styles.listContent}
             renderSectionHeader={({ section }) => (
               <View style={styles.sectionHeader}>
@@ -258,6 +274,8 @@ export default function TransactionsScreen() {
             {
               backgroundColor: theme.colors.primary,
               borderRadius: theme.radii.pill,
+              bottom:
+                Platform.OS === 'ios' ? Math.max(insets.bottom + 64, 90) : 22,
             },
           ]}
         >

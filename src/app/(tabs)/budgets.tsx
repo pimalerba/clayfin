@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useScrollToTop } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -44,6 +45,8 @@ import { BudgetWithUsage } from '@/types';
 
 export default function BudgetsScreen() {
   const theme = useAppTheme();
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  useScrollToTop(scrollRef as any);
   const { selectedMonth, setSelectedMonth } = useUIStore();
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -121,6 +124,7 @@ export default function BudgetsScreen() {
       style={[styles.safe, { backgroundColor: theme.colors.background }]}
     >
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >

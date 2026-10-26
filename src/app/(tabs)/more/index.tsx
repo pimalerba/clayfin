@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useScrollToTop } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   BarChart3,
@@ -17,6 +17,9 @@ import { formatCentsToBRL } from '@/utils/currency';
 
 export default function MoreScreen() {
   const theme = useAppTheme();
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  useScrollToTop(scrollRef as any);
+
   const { data: goals = [] } = useGoals();
   const { data: availableAccountCents = 0 } = useAvailableAccountBalance();
 
@@ -31,6 +34,7 @@ export default function MoreScreen() {
       style={[styles.safe, { backgroundColor: theme.colors.background }]}
     >
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -52,7 +56,7 @@ export default function MoreScreen() {
 
         <ClayCard
           radius="xl"
-          onPress={() => router.push('/(tabs)/goals')}
+          onPress={() => router.push('/(tabs)/more/goals')}
           style={styles.menuCard}
         >
           <View style={styles.menuRow}>
@@ -98,7 +102,7 @@ export default function MoreScreen() {
 
         <ClayCard
           radius="xl"
-          onPress={() => router.push('/(tabs)/reports')}
+          onPress={() => router.push('/(tabs)/more/reports')}
           style={styles.menuCard}
         >
           <View style={styles.menuRow}>
@@ -134,7 +138,7 @@ export default function MoreScreen() {
 
         <ClayCard
           radius="xl"
-          onPress={() => router.push('/(tabs)/settings')}
+          onPress={() => router.push('/(tabs)/more/settings')}
           style={styles.menuCard}
         >
           <View style={styles.menuRow}>

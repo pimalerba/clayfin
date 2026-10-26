@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useScrollToTop } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowDownCircle,
@@ -35,6 +35,8 @@ import { DynamicIcon } from '@/utils/icons';
 
 export default function HomeScreen() {
   const theme = useAppTheme();
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  useScrollToTop(scrollRef as any);
   const { selectedMonth, setSelectedMonth } = useUIStore();
 
   const { data: onboardingDone, isLoading: checkingOnboarding } =
@@ -67,6 +69,7 @@ export default function HomeScreen() {
       style={[styles.safe, { backgroundColor: theme.colors.background }]}
     >
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -303,7 +306,7 @@ export default function HomeScreen() {
             Meus Cofrinhos
           </Text>
           <Pressable
-            onPress={() => router.push('/(tabs)/goals')}
+            onPress={() => router.push('/(tabs)/more/goals')}
             accessibilityRole="button"
             style={styles.seeAllBtn}
           >
