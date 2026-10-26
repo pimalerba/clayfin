@@ -49,6 +49,10 @@ export default function SettingsScreen() {
   const exportMutation = useExportBackup();
   const importMutation = useImportBackup();
   const clearAllMutation = useClearAllData();
+  const isExecuting =
+    exportMutation.isPending ||
+    importMutation.isPending ||
+    clearAllMutation.isPending;
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -129,11 +133,19 @@ export default function SettingsScreen() {
             text: 'Sobrescrever e Importar',
             style: 'destructive',
             onPress: async () => {
-              await importMutation.mutateAsync(validation.payload!);
-              Alert.alert(
-                'Backup Restaurado!',
-                'Todos os seus dados foram importados com sucesso.'
-              );
+              try {
+                await importMutation.mutateAsync(validation.payload!);
+                Alert.alert(
+                  'Backup Restaurado!',
+                  'Todos os seus dados foram importados com sucesso.'
+                );
+              } catch (importErr: any) {
+                Alert.alert(
+                  'Erro ao restaurar backup',
+                  importErr?.message ??
+                    'Não foi possível importar os dados do backup. Tente novamente.'
+                );
+              }
             },
           },
         ]
@@ -165,11 +177,19 @@ export default function SettingsScreen() {
                   text: 'Apagar Tudo Permanentemente',
                   style: 'destructive',
                   onPress: async () => {
-                    await clearAllMutation.mutateAsync();
-                    Alert.alert(
-                      'Dados Apagados',
-                      'O aplicativo foi restaurado para o estado inicial.'
-                    );
+                    try {
+                      await clearAllMutation.mutateAsync();
+                      Alert.alert(
+                        'Dados Apagados',
+                        'O aplicativo foi restaurado para o estado inicial.'
+                      );
+                    } catch (clearErr: any) {
+                      Alert.alert(
+                        'Erro ao apagar dados',
+                        clearErr?.message ??
+                          'Não foi possível apagar os dados do dispositivo. Tente novamente.'
+                      );
+                    }
                   },
                 },
               ]
@@ -291,6 +311,7 @@ export default function SettingsScreen() {
             <ClayButton
               title="Exportar Backup"
               onPress={handleExportBackup}
+              disabled={isExecuting}
               loading={exportMutation.isPending}
               icon={<Download size={18} color="#FFFFFF" />}
               style={{ marginBottom: 10 }}
@@ -299,6 +320,7 @@ export default function SettingsScreen() {
               title="Importar de Arquivo JSON"
               variant="secondary"
               onPress={handleImportBackup}
+              disabled={isExecuting}
               loading={importMutation.isPending}
               icon={<Upload size={18} color={theme.colors.textPrimary} />}
             />
@@ -321,6 +343,7 @@ export default function SettingsScreen() {
             <ClayButton
               title="Nova"
               size="sm"
+              disabled={isExecuting}
               icon={<Plus size={16} color="#FFFFFF" />}
               onPress={() => router.push('/category-form')}
             />
@@ -333,12 +356,13 @@ export default function SettingsScreen() {
                 variant="subtle"
                 radius="md"
                 padding={12}
-                onPress={() =>
+                onPress={() => {
+                  if (isExecuting) return;
                   router.push({
                     pathname: '/category-form',
                     params: { id: cat.id },
-                  })
-                }
+                  });
+                }}
                 style={styles.categoryItem}
               >
                 <View style={styles.categoryItemRow}>
@@ -401,6 +425,7 @@ export default function SettingsScreen() {
             variant="danger"
             icon={<Trash2 size={18} color="#FFFFFF" />}
             onPress={handleClearAllData}
+            disabled={isExecuting}
             loading={clearAllMutation.isPending}
           />
         </ClayCard>

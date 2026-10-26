@@ -60,6 +60,11 @@ export default function GoalFormScreen() {
   });
 
   const selectedIcon = watch('icon');
+  const isMutationPending =
+    isSubmitting ||
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    deleteMutation.isPending;
 
   useEffect(() => {
     if (existingGoal) {
@@ -268,7 +273,12 @@ export default function GoalFormScreen() {
         <ClayButton
           title={isEditing ? 'Salvar Alterações' : 'Criar Cofrinho'}
           onPress={handleSubmit(onSubmit)}
-          loading={isSubmitting}
+          loading={
+            isSubmitting ||
+            createMutation.isPending ||
+            updateMutation.isPending
+          }
+          disabled={isMutationPending}
           size="lg"
         />
 
@@ -278,6 +288,8 @@ export default function GoalFormScreen() {
             onPress={handleDelete}
             variant="danger"
             icon={<Trash2 size={18} color="#FFFFFF" />}
+            loading={deleteMutation.isPending}
+            disabled={isMutationPending}
             style={{ marginTop: 12 }}
           />
         ) : null}

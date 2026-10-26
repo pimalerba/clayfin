@@ -67,6 +67,11 @@ export default function CategoryFormScreen() {
   const selectedType = watch('type');
   const selectedIcon = watch('icon');
   const selectedColor = watch('color');
+  const isMutationPending =
+    isSubmitting ||
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    deleteMutation.isPending;
 
   useEffect(() => {
     if (existingCategory) {
@@ -323,7 +328,12 @@ export default function CategoryFormScreen() {
         <ClayButton
           title={isEditing ? 'Salvar Categoria' : 'Criar Categoria'}
           onPress={handleSubmit(onSubmit)}
-          loading={isSubmitting}
+          loading={
+            isSubmitting ||
+            createMutation.isPending ||
+            updateMutation.isPending
+          }
+          disabled={isMutationPending}
           size="lg"
         />
 
@@ -333,6 +343,8 @@ export default function CategoryFormScreen() {
             onPress={handleDelete}
             variant="danger"
             icon={<Trash2 size={18} color="#FFFFFF" />}
+            loading={deleteMutation.isPending}
+            disabled={isMutationPending}
             style={{ marginTop: 12 }}
           />
         ) : null}

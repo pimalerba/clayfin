@@ -99,30 +99,38 @@ export default function BudgetsScreen() {
   };
 
   const onSubmit = async (values: BudgetFormData) => {
-    const existingBudget = budgets.find(
-      (b) => b.category_id === values.category_id
-    );
-    const isExceeded =
-      existingBudget != null &&
-      values.limit_cents > 0 &&
-      existingBudget.spent_cents >= values.limit_cents;
+    try {
+      const existingBudget = budgets.find(
+        (b) => b.category_id === values.category_id
+      );
+      const isExceeded =
+        existingBudget != null &&
+        values.limit_cents > 0 &&
+        existingBudget.spent_cents >= values.limit_cents;
 
-    await upsertMutation.mutateAsync({
-      category_id: values.category_id,
-      month: selectedMonth,
-      limit_cents: values.limit_cents,
-    });
+      await upsertMutation.mutateAsync({
+        category_id: values.category_id,
+        month: selectedMonth,
+        limit_cents: values.limit_cents,
+      });
 
-    if (isExceeded) {
-      hapticBudgetExceeded();
-    } else {
-      hapticTransactionSaved();
+      if (isExceeded) {
+        hapticBudgetExceeded();
+      } else {
+        hapticTransactionSaved();
+      }
+
+      setModalVisible(false);
+    } catch (err: any) {
+      Alert.alert(
+        'Erro ao salvar orçamento',
+        err?.message ?? 'Não foi possível salvar o limite definido.'
+      );
     }
-
-    setModalVisible(false);
   };
 
   const handleDelete = (budget: BudgetWithUsage) => {
+    if (deleteMutation.isPending) return;
     Alert.alert(
       'Remover limite',
       `Deseja remover o orçamento de "${budget.category_name}" neste mês?`,
@@ -131,7 +139,16 @@ export default function BudgetsScreen() {
         {
           text: 'Remover',
           style: 'destructive',
-          onPress: () => deleteMutation.mutate(budget.id),
+          onPress: async () => {
+            try {
+              await deleteMutation.mutateAsync(budget.id);
+            } catch (err: any) {
+              Alert.alert(
+                'Erro ao remover orçamento',
+                err?.message ?? 'Não foi possível remover o orçamento.'
+              );
+            }
+          },
         },
       ]
     );
@@ -534,7 +551,8 @@ export default function BudgetsScreen() {
         <ClayButton
           title="Salvar Orçamento"
           onPress={handleSubmit(onSubmit)}
-          loading={isSubmitting}
+          loading={isSubmitting || upsertMutation.isPending}
+          disabled={isSubmitting || upsertMutation.isPending}
           size="lg"
           style={{ marginTop: 8 }}
         />
