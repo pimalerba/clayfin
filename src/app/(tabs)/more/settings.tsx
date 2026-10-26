@@ -38,7 +38,10 @@ import {
   GlassSurface,
 } from '@/components/ui';
 import { DynamicIcon } from '@/utils/icons';
-import { validateBackupPayload } from '@/utils/backup';
+import {
+  validateBackupFileSize,
+  validateBackupPayload,
+} from '@/utils/backup';
 import { getTodayISO } from '@/utils/date';
 
 export default function SettingsScreen() {
@@ -109,6 +112,19 @@ export default function SettingsScreen() {
       }
 
       const asset = picked.assets[0];
+      const sizeInBytes = asset.size ?? 0;
+      if (sizeInBytes > 0) {
+        const sizeCheck = validateBackupFileSize(sizeInBytes);
+        if (!sizeCheck.valid) {
+          Alert.alert(
+            'Arquivo Muito Grande',
+            sizeCheck.error ??
+              'O arquivo selecionado excede o limite máximo permitido.'
+          );
+          return;
+        }
+      }
+
       const pickedFile = new File(asset.uri);
       const rawText = await pickedFile.text();
 
