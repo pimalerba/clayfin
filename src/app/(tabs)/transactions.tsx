@@ -15,13 +15,15 @@ import {
 } from 'react-native-safe-area-context';
 import { Plus, Search, Receipt, X } from 'lucide-react-native';
 import { useAppTheme } from '@/theme';
-import { useCategories, useTransactions } from '@/hooks';
+import { useCategories, useLiquidGlass, useTransactions } from '@/hooks';
 import { useUIStore } from '@/store/useUIStore';
 import {
   ClayChip,
   ClayEmptyState,
   ClayInput,
   ClayLoadingState,
+  GlassContainer,
+  GlassSurface,
 } from '@/components/ui';
 import { MonthSelector } from '@/components/MonthSelector';
 import { TransactionRow } from '@/components/TransactionRow';
@@ -39,6 +41,7 @@ interface DaySection {
 
 export default function TransactionsScreen() {
   const theme = useAppTheme();
+  const isLiquidGlass = useLiquidGlass();
   const insets = useSafeAreaInsets();
   const sectionListRef = useRef<SectionList<TransactionWithCategory, DaySection>>(null);
   useScrollToTop(sectionListRef as any);
@@ -264,23 +267,48 @@ export default function TransactionsScreen() {
           />
         )}
 
-        <Pressable
-          onPress={() => router.push('/transaction-form')}
-          accessibilityRole="button"
-          accessibilityLabel="Nova transação"
-          style={[
-            styles.fab,
-            theme.shadows.lg,
-            {
-              backgroundColor: theme.colors.primary,
-              borderRadius: theme.radii.pill,
-              bottom:
-                Platform.OS === 'ios' ? Math.max(insets.bottom + 64, 90) : 22,
-            },
-          ]}
-        >
-          <Plus size={28} color="#FFFFFF" strokeWidth={2.8} />
-        </Pressable>
+        {isLiquidGlass ? (
+          <GlassContainer
+            spacing={12}
+            style={[
+              styles.fabPosition,
+              { bottom: Math.max(insets.bottom + 64, 90) },
+            ]}
+          >
+            <Pressable
+              onPress={() => router.push('/transaction-form')}
+              accessibilityRole="button"
+              accessibilityLabel="Nova transação"
+            >
+              <GlassSurface
+                interactive
+                tintColor={theme.colors.primaryDark}
+                borderRadius={theme.radii.pill}
+                style={styles.fabGlass}
+              >
+                <Plus size={28} color="#FFFFFF" strokeWidth={2.8} />
+              </GlassSurface>
+            </Pressable>
+          </GlassContainer>
+        ) : (
+          <Pressable
+            onPress={() => router.push('/transaction-form')}
+            accessibilityRole="button"
+            accessibilityLabel="Nova transação"
+            style={[
+              styles.fab,
+              theme.shadows.lg,
+              {
+                backgroundColor: theme.colors.primary,
+                borderRadius: theme.radii.pill,
+                bottom:
+                  Platform.OS === 'ios' ? Math.max(insets.bottom + 64, 90) : 22,
+              },
+            ]}
+          >
+            <Plus size={28} color="#FFFFFF" strokeWidth={2.8} />
+          </Pressable>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -322,6 +350,16 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 4,
     marginTop: 4,
+  },
+  fabPosition: {
+    position: 'absolute',
+    right: 22,
+  },
+  fabGlass: {
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   fab: {
     position: 'absolute',

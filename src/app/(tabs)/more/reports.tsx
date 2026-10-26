@@ -16,6 +16,7 @@ import { useAppTheme } from '@/theme';
 import {
   useExpensesByCategory,
   useLastSixMonthsCashflow,
+  useLiquidGlass,
   useMonthlySummary,
 } from '@/hooks';
 import { useUIStore } from '@/store/useUIStore';
@@ -23,6 +24,8 @@ import {
   ClayCard,
   ClayEmptyState,
   ClayLoadingState,
+  GlassContainer,
+  GlassSurface,
 } from '@/components/ui';
 import { MonthSelector } from '@/components/MonthSelector';
 import { formatCentsToBRL } from '@/utils/currency';
@@ -30,6 +33,7 @@ import { DynamicIcon } from '@/utils/icons';
 
 export default function ReportsScreen() {
   const theme = useAppTheme();
+  const isLiquidGlass = useLiquidGlass();
   const { selectedMonth, setSelectedMonth } = useUIStore();
 
   const handleBack = () => {
@@ -90,17 +94,36 @@ export default function ReportsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <Pressable
-            onPress={handleBack}
-            accessibilityRole="button"
-            accessibilityLabel="Voltar para Mais"
-            style={[
-              styles.backBtn,
-              { backgroundColor: theme.colors.surface },
-            ]}
-          >
-            <ArrowLeft size={20} color={theme.colors.textPrimary} />
-          </Pressable>
+          {isLiquidGlass ? (
+            <GlassContainer spacing={8}>
+              <Pressable
+                onPress={handleBack}
+                accessibilityRole="button"
+                accessibilityLabel="Voltar para Mais"
+              >
+                <GlassSurface
+                  interactive
+                  tintColor="rgba(122, 90, 248, 0.16)"
+                  borderRadius={14}
+                  style={styles.backBtn}
+                >
+                  <ArrowLeft size={20} color="#1E1633" strokeWidth={2.4} />
+                </GlassSurface>
+              </Pressable>
+            </GlassContainer>
+          ) : (
+            <Pressable
+              onPress={handleBack}
+              accessibilityRole="button"
+              accessibilityLabel="Voltar para Mais"
+              style={[
+                styles.backBtn,
+                { backgroundColor: theme.colors.surface },
+              ]}
+            >
+              <ArrowLeft size={20} color={theme.colors.textPrimary} />
+            </Pressable>
+          )}
           <Text
             style={[theme.typography.h1, { color: theme.colors.textPrimary }]}
           >

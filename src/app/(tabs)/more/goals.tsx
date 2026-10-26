@@ -4,13 +4,19 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Calendar, PiggyBank, Plus, Sparkles } from 'lucide-react-native';
 import { useAppTheme } from '@/theme';
-import { useAvailableAccountBalance, useGoals } from '@/hooks';
+import {
+  useAvailableAccountBalance,
+  useGoals,
+  useLiquidGlass,
+} from '@/hooks';
 import {
   ClayButton,
   ClayCard,
   ClayEmptyState,
   ClayLoadingState,
   ClayProgressBar,
+  GlassContainer,
+  GlassSurface,
 } from '@/components/ui';
 import { formatCentsToBRL } from '@/utils/currency';
 import { formatDateShortPtBR } from '@/utils/date';
@@ -19,6 +25,7 @@ import { DynamicIcon } from '@/utils/icons';
 
 export default function GoalsScreen() {
   const theme = useAppTheme();
+  const isLiquidGlass = useLiquidGlass();
   const { data: goals = [], isLoading } = useGoals();
   const { data: availableAccountCents = 0 } = useAvailableAccountBalance();
 
@@ -47,17 +54,36 @@ export default function GoalsScreen() {
       >
         <View style={styles.headerRow}>
           <View style={styles.titleRow}>
-            <Pressable
-              onPress={handleBack}
-              accessibilityRole="button"
-              accessibilityLabel="Voltar para Mais"
-              style={[
-                styles.backBtn,
-                { backgroundColor: theme.colors.surface },
-              ]}
-            >
-              <ArrowLeft size={20} color={theme.colors.textPrimary} />
-            </Pressable>
+            {isLiquidGlass ? (
+              <GlassContainer spacing={8}>
+                <Pressable
+                  onPress={handleBack}
+                  accessibilityRole="button"
+                  accessibilityLabel="Voltar para Mais"
+                >
+                  <GlassSurface
+                    interactive
+                    tintColor="rgba(122, 90, 248, 0.16)"
+                    borderRadius={14}
+                    style={styles.backBtn}
+                  >
+                    <ArrowLeft size={20} color="#1E1633" strokeWidth={2.4} />
+                  </GlassSurface>
+                </Pressable>
+              </GlassContainer>
+            ) : (
+              <Pressable
+                onPress={handleBack}
+                accessibilityRole="button"
+                accessibilityLabel="Voltar para Mais"
+                style={[
+                  styles.backBtn,
+                  { backgroundColor: theme.colors.surface },
+                ]}
+              >
+                <ArrowLeft size={20} color={theme.colors.textPrimary} />
+              </Pressable>
+            )}
             <Text
               style={[theme.typography.h1, { color: theme.colors.textPrimary }]}
             >
