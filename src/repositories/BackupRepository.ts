@@ -1,4 +1,4 @@
-import { getDatabase } from '@/db';
+import { getDatabase, runInTransaction } from '@/db';
 import { seedDefaultCategories } from '@/db/seed';
 import {
   Budget,
@@ -50,8 +50,8 @@ export const BackupRepository: IBackupRepository = {
   async importBackupData(payload: ClayfinBackupPayload): Promise<void> {
     const db = await getDatabase();
 
-    await db.withTransactionAsync(async () => {
-      await db.execAsync(`
+    await runInTransaction(db, async (txn) => {
+      await txn.execAsync(`
         DELETE FROM goal_contributions;
         DELETE FROM goals;
         DELETE FROM budgets;
@@ -60,7 +60,7 @@ export const BackupRepository: IBackupRepository = {
       `);
 
       for (const cat of payload.data.categories) {
-        await db.runAsync(
+        await txn.runAsync(
           `INSERT INTO categories (id, name, icon, color, type, is_default, created_at)
            VALUES (?, ?, ?, ?, ?, ?, ?);`,
           [
@@ -76,7 +76,7 @@ export const BackupRepository: IBackupRepository = {
       }
 
       for (const tx of payload.data.transactions) {
-        await db.runAsync(
+        await txn.runAsync(
           `INSERT INTO transactions (id, category_id, type, amount_cents, description, date, created_at)
            VALUES (?, ?, ?, ?, ?, ?, ?);`,
           [
@@ -92,7 +92,7 @@ export const BackupRepository: IBackupRepository = {
       }
 
       for (const b of payload.data.budgets) {
-        await db.runAsync(
+        await txn.runAsync(
           `INSERT INTO budgets (id, category_id, month, limit_cents)
            VALUES (?, ?, ?, ?);`,
           [b.id, b.category_id, b.month, Math.trunc(b.limit_cents)]
@@ -100,7 +100,7 @@ export const BackupRepository: IBackupRepository = {
       }
 
       for (const g of payload.data.goals) {
-        await db.runAsync(
+        await txn.runAsync(
           `INSERT INTO goals (id, name, icon, target_cents, deadline, created_at)
            VALUES (?, ?, ?, ?, ?, ?);`,
           [
@@ -115,7 +115,7 @@ export const BackupRepository: IBackupRepository = {
       }
 
       for (const gc of payload.data.goal_contributions) {
-        await db.runAsync(
+        await txn.runAsync(
           `INSERT INTO goal_contributions (id, goal_id, amount_cents, date, created_at)
            VALUES (?, ?, ?, ?, ?);`,
           [
@@ -127,24 +127,24 @@ export const BackupRepository: IBackupRepository = {
           ]
         );
       }
-    });
 
-    // Garante que as categorias padrão existam mesmo se o backup não tinha alguma
-    await seedDefaultCategories(db);
+      // Garante que as categorias padrão existam mesmo se o backup não tinha alguma
+      await seedDefaultCategories(txn, { inTransaction: true });
+    });
   },
 
   async clearAllData(): Promise<void> {
     const db = await getDatabase();
-    await db.withTransactionAsync(async () => {
-      await db.execAsync(`
+    await runInTransaction(db, async (txn) => {
+      await txn.execAsync(`
         DELETE FROM goal_contributions;
         DELETE FROM goals;
         DELETE FROM budgets;
         DELETE FROM transactions;
         DELETE FROM categories;
       `);
+      await seedDefaultCategories(txn, { inTransaction: true });
     });
-    await seedDefaultCategories(db);
   },
 
   async isOnboardingCompleted(): Promise<boolean> {

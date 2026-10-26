@@ -85,6 +85,12 @@ export default function TransactionFormScreen() {
   const txMonth = (selectedDate || getTodayISO()).slice(0, 7);
   const { data: monthBudgets = [] } = useBudgets(txMonth);
 
+  const isMutationPending =
+    isSubmitting ||
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    deleteMutation.isPending;
+
   const filteredCategories = useMemo(
     () => allCategories.filter((c) => c.type === selectedType),
     [allCategories, selectedType]
@@ -375,7 +381,12 @@ export default function TransactionFormScreen() {
           <ClayButton
             title={isEditing ? 'Salvar Alterações' : 'Adicionar Transação'}
             onPress={handleSubmit(onSubmit)}
-            loading={isSubmitting}
+            loading={
+              isSubmitting ||
+              createMutation.isPending ||
+              updateMutation.isPending
+            }
+            disabled={isMutationPending}
             variant={selectedType === 'income' ? 'income' : 'primary'}
             size="lg"
           />
@@ -386,6 +397,8 @@ export default function TransactionFormScreen() {
               onPress={handleDelete}
               variant="danger"
               icon={<Trash2 size={18} color="#FFFFFF" />}
+              loading={deleteMutation.isPending}
+              disabled={isMutationPending}
               style={{ marginTop: 12 }}
             />
           ) : null}

@@ -1,4 +1,4 @@
-import { getDatabase } from '@/db';
+import { getDatabase, runInTransaction } from '@/db';
 import { DEFAULT_OUTROS_EXPENSE_ID } from '@/db/seed';
 import { Category, TransactionType } from '@/types';
 import { generateId } from '@/utils/uuid';
@@ -105,29 +105,34 @@ export const CategoryRepository: ICategoryRepository = {
       throw new Error('A categoria padrão "Outros" não pode ser excluída.');
     }
 
-    const txCount = await this.countTransactions(categoryId);
-    if (txCount > 0 && !reassignToOutros) {
-      throw new Error(
-        `Esta categoria possui ${txCount} transação(ões). Confirme para reatribuir para "Outros".`
+    return runInTransaction(db, async (txn) => {
+      const txCountRow = await txn.getFirstAsync<{ count: number }>(
+        `SELECT COUNT(*) as count FROM transactions WHERE category_id = ?;`,
+        [categoryId]
       );
-    }
+      const txCount = txCountRow?.count ?? 0;
 
-    await db.withTransactionAsync(async () => {
+      if (txCount > 0 && !reassignToOutros) {
+        throw new Error(
+          `Esta categoria possui ${txCount} transação(ões). Confirme para reatribuir para "Outros".`
+        );
+      }
+
       if (txCount > 0 && reassignToOutros) {
         // Garante que a categoria Outros existe
-        const outros = await db.getFirstAsync<Category>(
+        const outros = await txn.getFirstAsync<Category>(
           `SELECT * FROM categories WHERE id = ? OR LOWER(name) = 'outros' LIMIT 1;`,
           [DEFAULT_OUTROS_EXPENSE_ID]
         );
         const fallbackId = outros?.id ?? DEFAULT_OUTROS_EXPENSE_ID;
 
-        await db.runAsync(
+        await txn.runAsync(
           `UPDATE transactions SET category_id = ? WHERE category_id = ?;`,
           [fallbackId, categoryId]
         );
       }
 
-      await db.runAsync(`DELETE FROM categories WHERE id = ?;`, [categoryId]);
+      await txn.runAsync(`DELETE FROM categories WHERE id = ?;`, [categoryId]);
     });
   },
 };

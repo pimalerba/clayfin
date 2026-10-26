@@ -1,3 +1,4 @@
+import * as SQLite from 'expo-sqlite';
 import { getDatabase } from '@/db';
 import {
   CategoryExpenseSlice,
@@ -12,14 +13,16 @@ import {
 
 export interface IReportRepository {
   getMonthlySummary(month: string): Promise<MonthlySummaryReport>;
-  getAvailableAccountBalance(): Promise<number>;
+  getAvailableAccountBalance(dbOrTxn?: SQLite.SQLiteDatabase): Promise<number>;
   getExpensesByCategory(month: string): Promise<CategoryExpenseSlice[]>;
   getLastSixMonthsCashflow(endMonth: string): Promise<MonthlyCashflowPoint[]>;
 }
 
 export const ReportRepository: IReportRepository = {
-  async getAvailableAccountBalance(): Promise<number> {
-    const db = await getDatabase();
+  async getAvailableAccountBalance(
+    dbOrTxn?: SQLite.SQLiteDatabase
+  ): Promise<number> {
+    const db = dbOrTxn ?? (await getDatabase());
     const txTotals = await db.getAllAsync<{
       type: 'income' | 'expense';
       total_cents: number;

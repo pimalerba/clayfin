@@ -421,6 +421,7 @@ export default function GoalDetailScreen() {
                   </Text>
 
                   <Pressable
+                    disabled={deleteContributionMutation.isPending}
                     onPress={() =>
                       deleteContributionMutation.mutate({
                         id: item.id,
@@ -531,7 +532,8 @@ export default function GoalDetailScreen() {
           }
           variant={currentMode === 'deposit' ? 'income' : 'danger'}
           onPress={handleSubmit(onSubmitContribution)}
-          loading={isSubmitting}
+          loading={isSubmitting || addContributionMutation.isPending}
+          disabled={isSubmitting || addContributionMutation.isPending}
           size="lg"
           style={{ marginTop: 8 }}
         />

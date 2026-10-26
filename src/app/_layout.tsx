@@ -1,5 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -13,9 +19,11 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AlertTriangle, RotateCcw } from 'lucide-react-native';
 import { getDatabase } from '@/db';
 import { useLiquidGlass } from '@/hooks/useLiquidGlass';
 import { useAppTheme } from '@/theme';
+import { ClayButton, ClayCard } from '@/components/ui';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -28,10 +36,13 @@ const queryClient = new QueryClient({
   },
 });
 
+type DbState = 'loading' | 'ready' | 'error';
+
 export default function RootLayout() {
   const theme = useAppTheme();
   const isLiquidGlass = useLiquidGlass();
-  const [dbReady, setDbReady] = useState(false);
+  const [dbState, setDbState] = useState<DbState>('loading');
+  const [dbErrorMessage, setDbErrorMessage] = useState<string | null>(null);
 
   const [fontsLoaded, fontError] = useFonts({
     Nunito_400Regular,
@@ -63,22 +74,48 @@ export default function RootLayout() {
     [isLiquidGlass, theme.colors.background]
   );
 
-  useEffect(() => {
-    let mounted = true;
+  const initDatabase = useCallback(() => {
+    setDbErrorMessage(null);
+    setDbState('loading');
+
     getDatabase()
       .then(() => {
-        if (mounted) setDbReady(true);
+        setDbState('ready');
       })
       .catch((err) => {
         console.error('Erro ao inicializar SQLite:', err);
-        if (mounted) setDbReady(true);
+        setDbState('error');
+        setDbErrorMessage(
+          err?.message ?? 'Não foi possível carregar o banco de dados local.'
+        );
       });
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    getDatabase()
+      .then(() => {
+        if (isMounted) {
+          setDbState('ready');
+        }
+      })
+      .catch((err) => {
+        if (isMounted) {
+          console.error('Erro ao inicializar SQLite:', err);
+          setDbState('error');
+          setDbErrorMessage(
+            err?.message ?? 'Não foi possível carregar o banco de dados local.'
+          );
+        }
+      });
+
     return () => {
-      mounted = false;
+      isMounted = false;
     };
   }, []);
 
-  const isAppReady = (fontsLoaded || Boolean(fontError)) && dbReady;
+  const fontsReady = fontsLoaded || Boolean(fontError);
+  const isAppReady = fontsReady && dbState === 'ready';
 
   const navigationTheme = useMemo<Theme>(
     () => ({
@@ -98,10 +135,72 @@ export default function RootLayout() {
   );
 
   useEffect(() => {
-    if (isAppReady) {
+    if (isAppReady || (dbState === 'error' && fontsReady)) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [isAppReady]);
+  }, [isAppReady, dbState, fontsReady]);
+
+  if (dbState === 'error') {
+    return (
+      <View
+        style={[
+          styles.centerScreen,
+          { backgroundColor: theme.colors.background, padding: 24 },
+        ]}
+      >
+        <StatusBar style="dark" />
+        <ClayCard radius="xl" style={styles.errorCard}>
+          <View
+            style={[
+              styles.errorIconCircle,
+              { backgroundColor: theme.colors.expenseLight },
+            ]}
+          >
+            <AlertTriangle size={32} color={theme.colors.expenseDark} />
+          </View>
+          <Text
+            style={[
+              theme.typography.h2,
+              styles.errorTitle,
+              { color: theme.colors.textPrimary },
+            ]}
+          >
+            Ops! Falha ao carregar seus dados
+          </Text>
+          <Text
+            style={[
+              theme.typography.body,
+              styles.errorDescription,
+              { color: theme.colors.textSecondary },
+            ]}
+          >
+            Não foi possível inicializar o banco de dados local do Clayfin. Seus
+            dados continuam salvos com segurança no aparelho.
+          </Text>
+          {dbErrorMessage ? (
+            <Text
+              style={[
+                theme.typography.caption,
+                styles.errorDetails,
+                { color: theme.colors.textMuted },
+              ]}
+              numberOfLines={3}
+            >
+              Detalhe técnico: {dbErrorMessage}
+            </Text>
+          ) : null}
+          <ClayButton
+            title="Tentar novamente"
+            onPress={initDatabase}
+            variant="primary"
+            size="lg"
+            icon={<RotateCcw size={18} color="#FFFFFF" />}
+            style={styles.retryButton}
+          />
+        </ClayCard>
+      </View>
+    );
+  }
 
   if (!isAppReady) {
     return (
@@ -167,5 +266,41 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  centerScreen: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorCard: {
+    width: '100%',
+    maxWidth: 420,
+    padding: 24,
+    alignItems: 'center',
+  },
+  errorIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  errorTitle: {
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  errorDescription: {
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  errorDetails: {
+    textAlign: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 8,
+  },
+  retryButton: {
+    width: '100%',
+    marginTop: 8,
   },
 });

@@ -1,41 +1,64 @@
 import { z } from 'zod';
 import { ClayfinBackupPayload } from '@/types';
 
+export const CURRENT_BACKUP_VERSION = 1;
+export const SUPPORTED_BACKUP_VERSIONS = [1] as const;
+export const MAX_BACKUP_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
+
+/**
+ * Valida o tamanho do arquivo antes de ler seu conteúdo na memória do JavaScript,
+ * prevenindo estouro de memória (OOM crash) caso o usuário selecione um arquivo gigante.
+ */
+export function validateBackupFileSize(bytes: number): {
+  valid: boolean;
+  error?: string;
+} {
+  if (bytes > MAX_BACKUP_FILE_BYTES) {
+    const mbLimit = MAX_BACKUP_FILE_BYTES / (1024 * 1024);
+    const fileMb = (bytes / (1024 * 1024)).toFixed(1);
+    return {
+      valid: false,
+      error: `O arquivo selecionado (${fileMb} MB) excede o limite máximo permitido de ${mbLimit} MB.`,
+    };
+  }
+  return { valid: true };
+}
+
 const categorySchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  icon: z.string().min(1),
-  color: z.string().min(1),
+  id: z.string().min(1, 'ID de categoria obrigatório'),
+  name: z.string().min(1, 'Nome de categoria obrigatório'),
+  icon: z.string().min(1, 'Ícone obrigatório'),
+  color: z.string().min(1, 'Cor obrigatória'),
   type: z.enum(['income', 'expense']),
   is_default: z.number().int().min(0).max(1),
   created_at: z.string().min(1),
 });
 
 const transactionSchema = z.object({
-  id: z.string().min(1),
-  category_id: z.string().min(1),
+  id: z.string().min(1, 'ID de transação obrigatório'),
+  category_id: z.string().min(1, 'Categoria obrigatória'),
   type: z.enum(['income', 'expense']),
-  amount_cents: z.number().int().positive(),
+  amount_cents: z.number().int().positive('O valor deve ser positivo'),
   description: z.string().nullable().optional().transform((v) => v ?? null),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida (use AAAA-MM-DD)'),
   created_at: z.string().min(1),
 });
 
 const budgetSchema = z.object({
-  id: z.string().min(1),
-  category_id: z.string().min(1),
+  id: z.string().min(1, 'ID de orçamento obrigatório'),
+  category_id: z.string().min(1, 'Categoria do orçamento obrigatória'),
   month: z.string().regex(/^\d{4}-\d{2}$/, 'Mês inválido (use AAAA-MM)'),
-  limit_cents: z.number().int().positive(),
+  limit_cents: z.number().int().positive('O limite deve ser positivo'),
 });
 
 const goalSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  icon: z.string().min(1),
-  target_cents: z.number().int().positive(),
+  id: z.string().min(1, 'ID de meta obrigatório'),
+  name: z.string().min(1, 'Nome da meta obrigatório'),
+  icon: z.string().min(1, 'Ícone da meta obrigatório'),
+  target_cents: z.number().int().positive('O valor alvo deve ser positivo'),
   deadline: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data limite inválida')
     .nullable()
     .optional()
     .transform((v) => v ?? null),
@@ -43,20 +66,24 @@ const goalSchema = z.object({
 });
 
 const goalContributionSchema = z.object({
-  id: z.string().min(1),
-  goal_id: z.string().min(1),
+  id: z.string().min(1, 'ID de movimentação obrigatório'),
+  goal_id: z.string().min(1, 'Meta obrigatória'),
   amount_cents: z
     .number()
     .int()
     .refine((v) => v !== 0, 'O valor deve ser diferente de zero'),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data de movimentação inválida'),
   created_at: z.string().min(1),
 });
 
 export const clayfinBackupSchema = z.object({
-  app: z.literal('Clayfin'),
-  version: z.number().int().min(1),
-  exported_at: z.string().min(1),
+  app: z.literal('Clayfin', {
+    errorMap: () => ({
+      message: 'O arquivo não pertence ao aplicativo Clayfin.',
+    }),
+  }),
+  version: z.number().int(),
+  exported_at: z.string().min(1, 'Data de exportação obrigatória'),
   data: z.object({
     categories: z.array(categorySchema),
     transactions: z.array(transactionSchema),
@@ -73,51 +100,158 @@ export interface BackupValidationResult {
 }
 
 /**
- * Função pura que valida uma string ou objeto JSON do backup do Clayfin.
+ * Função pura que valida uma string ou objeto JSON do backup do Clayfin,
+ * conferindo versão, estrutura, duplicidade de IDs e integridade referencial.
  */
 export function validateBackupPayload(rawInput: unknown): BackupValidationResult {
+  let parsedJson: any;
   try {
-    const parsedJson =
+    parsedJson =
       typeof rawInput === 'string' ? JSON.parse(rawInput) : rawInput;
-    const result = clayfinBackupSchema.safeParse(parsedJson);
-
-    if (!result.success) {
-      const firstIssue = result.error.issues[0];
-      return {
-        valid: false,
-        error: `Formato de backup inválido: ${firstIssue?.path.join('.') || 'arquivo'} (${firstIssue?.message || 'erro de esquema'})`,
-      };
-    }
-
-    // Valida integridade referencial básica (category_id existe nas categorias do backup)
-    const categoryIds = new Set(result.data.data.categories.map((c) => c.id));
-    for (const tx of result.data.data.transactions) {
-      if (!categoryIds.has(tx.category_id)) {
-        return {
-          valid: false,
-          error: `Transação "${tx.id}" referencia uma categoria inexistente no backup.`,
-        };
-      }
-    }
-
-    const goalIds = new Set(result.data.data.goals.map((g) => g.id));
-    for (const gc of result.data.data.goal_contributions) {
-      if (!goalIds.has(gc.goal_id)) {
-        return {
-          valid: false,
-          error: `Aporte "${gc.id}" referencia uma meta inexistente no backup.`,
-        };
-      }
-    }
-
-    return {
-      valid: true,
-      payload: result.data,
-    };
   } catch {
     return {
       valid: false,
       error: 'O arquivo selecionado não é um JSON válido.',
     };
   }
+
+  if (typeof parsedJson !== 'object' || parsedJson === null) {
+    return {
+      valid: false,
+      error: 'Conteúdo de backup inválido: esperado um objeto JSON.',
+    };
+  }
+
+  // Validação estrita de versão do backup
+  if (typeof parsedJson.version === 'number') {
+    if (parsedJson.version > CURRENT_BACKUP_VERSION) {
+      return {
+        valid: false,
+        error: `A versão deste backup (v${parsedJson.version}) é mais recente do que a versão suportada por este aplicativo (v${CURRENT_BACKUP_VERSION}). Por favor, atualize o Clayfin.`,
+      };
+    }
+    if (!SUPPORTED_BACKUP_VERSIONS.includes(parsedJson.version as any)) {
+      return {
+        valid: false,
+        error: `Versão de backup não suportada: v${parsedJson.version}. Apenas a versão 1 é aceita.`,
+      };
+    }
+  }
+
+  const result = clayfinBackupSchema.safeParse(parsedJson);
+  if (!result.success) {
+    const firstIssue = result.error.issues[0];
+    const pathStr = firstIssue?.path.join('.') || 'arquivo';
+    return {
+      valid: false,
+      error: `Formato de backup inválido em "${pathStr}": ${firstIssue?.message || 'estrutura incompatível'}.`,
+    };
+  }
+
+  const { categories, transactions, budgets, goals, goal_contributions } =
+    result.data.data;
+
+  // 1. Validação de IDs duplicados dentro de cada coleção
+  const seenCatIds = new Set<string>();
+  for (const cat of categories) {
+    if (seenCatIds.has(cat.id)) {
+      return {
+        valid: false,
+        error: `ID de categoria duplicado no backup: "${cat.id}".`,
+      };
+    }
+    seenCatIds.add(cat.id);
+  }
+
+  const seenTxIds = new Set<string>();
+  for (const tx of transactions) {
+    if (seenTxIds.has(tx.id)) {
+      return {
+        valid: false,
+        error: `ID de transação duplicado no backup: "${tx.id}".`,
+      };
+    }
+    seenTxIds.add(tx.id);
+  }
+
+  const seenBudgetIds = new Set<string>();
+  for (const b of budgets) {
+    if (seenBudgetIds.has(b.id)) {
+      return {
+        valid: false,
+        error: `ID de orçamento duplicado no backup: "${b.id}".`,
+      };
+    }
+    seenBudgetIds.add(b.id);
+  }
+
+  const seenGoalIds = new Set<string>();
+  for (const g of goals) {
+    if (seenGoalIds.has(g.id)) {
+      return {
+        valid: false,
+        error: `ID de meta duplicado no backup: "${g.id}".`,
+      };
+    }
+    seenGoalIds.add(g.id);
+  }
+
+  const seenContribIds = new Set<string>();
+  for (const gc of goal_contributions) {
+    if (seenContribIds.has(gc.id)) {
+      return {
+        valid: false,
+        error: `ID de movimentação de meta duplicado no backup: "${gc.id}".`,
+      };
+    }
+    seenContribIds.add(gc.id);
+  }
+
+  // 2. Validação de integridade referencial: transações -> categorias
+  for (const tx of transactions) {
+    if (!seenCatIds.has(tx.category_id)) {
+      return {
+        valid: false,
+        error: `Transação "${tx.id}" faz referência a uma categoria inexistente no backup ("${tx.category_id}").`,
+      };
+    }
+  }
+
+  // 3. Validação de integridade referencial: orçamentos -> categorias
+  for (const b of budgets) {
+    if (!seenCatIds.has(b.category_id)) {
+      return {
+        valid: false,
+        error: `Orçamento "${b.id}" faz referência a uma categoria inexistente no backup ("${b.category_id}").`,
+      };
+    }
+  }
+
+  // 4. Validação de integridade referencial: aportes -> metas
+  for (const gc of goal_contributions) {
+    if (!seenGoalIds.has(gc.goal_id)) {
+      return {
+        valid: false,
+        error: `Movimentação "${gc.id}" faz referência a uma meta inexistente no backup ("${gc.goal_id}").`,
+      };
+    }
+  }
+
+  // 5. Validação de unicidade do par (category_id, month) em orçamentos
+  const seenBudgetPairs = new Set<string>();
+  for (const b of budgets) {
+    const pairKey = `${b.category_id}_${b.month}`;
+    if (seenBudgetPairs.has(pairKey)) {
+      return {
+        valid: false,
+        error: `Existe mais de um orçamento definido para a mesma categoria ("${b.category_id}") no mês "${b.month}".`,
+      };
+    }
+    seenBudgetPairs.add(pairKey);
+  }
+
+  return {
+    valid: true,
+    payload: result.data as ClayfinBackupPayload,
+  };
 }
