@@ -28,18 +28,35 @@ import {
   useClearAllData,
   useExportBackup,
   useImportBackup,
+  useLiquidGlass,
+  useWindowClass,
 } from '@/hooks';
-import { ClayButton, ClayCard } from '@/components/ui';
+import {
+  ClayButton,
+  ClayCard,
+  GlassContainer,
+  GlassSurface,
+} from '@/components/ui';
 import { DynamicIcon } from '@/utils/icons';
 import { validateBackupPayload } from '@/utils/backup';
 import { getTodayISO } from '@/utils/date';
 
 export default function SettingsScreen() {
   const theme = useAppTheme();
+  const isLiquidGlass = useLiquidGlass();
+  const { maxContentWidth } = useWindowClass();
   const { data: categories = [] } = useCategories();
   const exportMutation = useExportBackup();
   const importMutation = useImportBackup();
   const clearAllMutation = useClearAllData();
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/more');
+    }
+  };
 
   const handleExportBackup = async () => {
     try {
@@ -165,25 +182,53 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView
-      edges={['top']}
+      edges={Platform.OS === 'ios' ? ['top', 'left', 'right'] : ['top']}
       style={[styles.safe, { backgroundColor: theme.colors.background }]}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          maxContentWidth
+            ? {
+                maxWidth: maxContentWidth,
+                width: '100%',
+                alignSelf: 'center',
+              }
+            : null,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <Pressable
-            onPress={() => router.push('/(tabs)/more')}
-            accessibilityRole="button"
-            accessibilityLabel="Voltar para Mais"
-            style={[
-              styles.backBtn,
-              { backgroundColor: theme.colors.surface },
-            ]}
-          >
-            <ArrowLeft size={20} color={theme.colors.textPrimary} />
-          </Pressable>
+          {isLiquidGlass ? (
+            <GlassContainer spacing={8}>
+              <Pressable
+                onPress={handleBack}
+                accessibilityRole="button"
+                accessibilityLabel="Voltar para Mais"
+              >
+                <GlassSurface
+                  interactive
+                  tintColor="rgba(122, 90, 248, 0.16)"
+                  borderRadius={14}
+                  style={styles.backBtn}
+                >
+                  <ArrowLeft size={20} color="#1E1633" strokeWidth={2.4} />
+                </GlassSurface>
+              </Pressable>
+            </GlassContainer>
+          ) : (
+            <Pressable
+              onPress={handleBack}
+              accessibilityRole="button"
+              accessibilityLabel="Voltar para Mais"
+              style={[
+                styles.backBtn,
+                { backgroundColor: theme.colors.surface },
+              ]}
+            >
+              <ArrowLeft size={20} color={theme.colors.textPrimary} />
+            </Pressable>
+          )}
           <Text
             style={[theme.typography.h1, { color: theme.colors.textPrimary }]}
           >

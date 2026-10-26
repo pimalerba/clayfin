@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import {
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,16 +15,17 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ArrowDownCircle,
   ArrowUpCircle,
-  Calendar,
   FileText,
   Trash2,
   X,
 } from 'lucide-react-native';
 import { useAppTheme } from '@/theme';
 import {
+  useBudgets,
   useCategories,
   useCreateTransaction,
   useDeleteTransaction,
+  useLiquidGlass,
   useTransactionDetail,
   useUpdateTransaction,
 } from '@/hooks';
@@ -32,16 +34,24 @@ import {
   ClayCard,
   ClayChip,
   ClayInput,
+  GlassContainer,
+  GlassSurface,
+  NativeDateField,
 } from '@/components/ui';
 import {
   TransactionFormData,
   transactionFormSchema,
 } from '@/features/schemas';
 import { getTodayISO } from '@/utils/date';
+import {
+  hapticBudgetExceeded,
+  hapticTransactionSaved,
+} from '@/utils/haptics';
 import { DynamicIcon } from '@/utils/icons';
 
 export default function TransactionFormScreen() {
   const theme = useAppTheme();
+  const isLiquidGlass = useLiquidGlass();
   const params = useLocalSearchParams<{ id?: string; initialType?: string }>();
   const isEditing = Boolean(params.id);
 
@@ -71,6 +81,9 @@ export default function TransactionFormScreen() {
 
   const selectedType = watch('type');
   const selectedCategoryId = watch('category_id');
+  const selectedDate = watch('date');
+  const txMonth = (selectedDate || getTodayISO()).slice(0, 7);
+  const { data: monthBudgets = [] } = useBudgets(txMonth);
 
   const filteredCategories = useMemo(
     () => allCategories.filter((c) => c.type === selectedType),
@@ -103,6 +116,26 @@ export default function TransactionFormScreen() {
 
   const onSubmit = async (values: TransactionFormData) => {
     try {
+      const matchingBudget =
+        values.type === 'expense'
+          ? monthBudgets.find((b) => b.category_id === values.category_id)
+          : undefined;
+      const previousExpenseInSameBudget =
+        isEditing &&
+        existingTx &&
+        existingTx.type === 'expense' &&
+        existingTx.category_id === values.category_id &&
+        existingTx.date.slice(0, 7) === values.date.slice(0, 7)
+          ? existingTx.amount_cents
+          : 0;
+      const willExceedBudget =
+        matchingBudget != null &&
+        matchingBudget.limit_cents > 0 &&
+        matchingBudget.spent_cents -
+          previousExpenseInSameBudget +
+          values.amount_cents >=
+          matchingBudget.limit_cents;
+
       if (isEditing && params.id) {
         await updateMutation.mutateAsync({
           id: params.id,
@@ -111,6 +144,13 @@ export default function TransactionFormScreen() {
       } else {
         await createMutation.mutateAsync(values);
       }
+
+      if (willExceedBudget) {
+        hapticBudgetExceeded();
+      } else {
+        hapticTransactionSaved();
+      }
+
       router.back();
     } catch (err: any) {
       Alert.alert(
@@ -141,29 +181,66 @@ export default function TransactionFormScreen() {
 
   return (
     <SafeAreaView
-      style={[styles.safe, { backgroundColor: theme.colors.background }]}
+      edges={Platform.OS === 'ios' ? ['bottom'] : ['top', 'bottom']}
+      style={[
+        styles.safe,
+        {
+          backgroundColor: isLiquidGlass
+            ? 'transparent'
+            : theme.colors.background,
+        },
+      ]}
     >
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          Platform.OS === 'ios' ? { paddingTop: 18 } : null,
+        ]}
+      >
         <Text
-          style={[theme.typography.h1, { color: theme.colors.textPrimary }]}
+          style={[
+            theme.typography.h1,
+            { color: isLiquidGlass ? '#1E1633' : theme.colors.textPrimary },
+          ]}
         >
           {isEditing ? 'Editar Transação' : 'Nova Transação'}
         </Text>
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel="Fechar"
-          style={[
-            styles.iconBtn,
-            { backgroundColor: theme.colors.surface },
-          ]}
-        >
-          <X size={22} color={theme.colors.textPrimary} />
-        </Pressable>
+        {isLiquidGlass ? (
+          <GlassContainer spacing={8}>
+            <Pressable
+              onPress={() => router.back()}
+              accessibilityRole="button"
+              accessibilityLabel="Fechar"
+            >
+              <GlassSurface
+                interactive
+                tintColor="rgba(122, 90, 248, 0.16)"
+                borderRadius={22}
+                style={styles.iconBtn}
+              >
+                <X size={22} color="#1E1633" strokeWidth={2.4} />
+              </GlassSurface>
+            </Pressable>
+          </GlassContainer>
+        ) : (
+          <Pressable
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Fechar"
+            style={[
+              styles.iconBtn,
+              { backgroundColor: theme.colors.surface },
+            ]}
+          >
+            <X size={22} color={theme.colors.textPrimary} />
+          </Pressable>
+        )}
       </View>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
+        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -267,14 +344,10 @@ export default function TransactionFormScreen() {
             control={control}
             name="date"
             render={({ field: { value, onChange } }) => (
-              <ClayInput
-                label="Data (AAAA-MM-DD)"
-                placeholder="2026-10-26"
+              <NativeDateField
+                label={Platform.OS === 'ios' ? 'Data' : 'Data (AAAA-MM-DD)'}
                 value={value}
-                onChangeText={onChange}
-                leftIcon={
-                  <Calendar size={18} color={theme.colors.textSecondary} />
-                }
+                onChange={onChange}
                 errorMessage={errors.date?.message}
               />
             )}

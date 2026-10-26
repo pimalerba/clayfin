@@ -14,6 +14,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
+import { useAccessibilityPreferences } from '@/hooks/useAccessibilityPreferences';
 import { useAppTheme } from '@/theme';
 
 export interface ClayButtonProps {
@@ -42,6 +43,7 @@ export function ClayButton({
   accessibilityLabel,
 }: ClayButtonProps) {
   const theme = useAppTheme();
+  const { reduceMotion } = useAccessibilityPreferences();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -103,12 +105,16 @@ export function ClayButton({
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       onPressIn={() => {
-        if (!isDisabled) {
+        if (!isDisabled && !reduceMotion) {
           scale.value = withSpring(0.95, { damping: 14, stiffness: 320 });
         }
       }}
       onPressOut={() => {
-        scale.value = withSpring(1, { damping: 14, stiffness: 320 });
+        if (!reduceMotion) {
+          scale.value = withSpring(1, { damping: 14, stiffness: 320 });
+        } else {
+          scale.value = 1;
+        }
       }}
       style={[
         styles.shadowWrapper,
@@ -141,10 +147,11 @@ export function ClayButton({
           <View style={styles.contentRow}>
             {icon ? <View style={styles.iconSlot}>{icon}</View> : null}
             <Text
+              maxFontSizeMultiplier={1.35}
               style={[
                 theme.typography.button,
                 size === 'sm' && { fontSize: 14 },
-                { color: getTextColor() },
+                { color: getTextColor(), flexShrink: 1, textAlign: 'center' },
               ]}
             >
               {title}
@@ -163,6 +170,7 @@ const styles = StyleSheet.create({
   buttonInner: {
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 10,
     borderTopWidth: 2,
     borderLeftWidth: 2,
     borderBottomWidth: 3.5,

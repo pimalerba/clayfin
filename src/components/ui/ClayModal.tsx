@@ -10,7 +10,10 @@ import {
   View,
 } from 'react-native';
 import { X } from 'lucide-react-native';
+import { useLiquidGlass } from '@/hooks/useLiquidGlass';
 import { useAppTheme } from '@/theme';
+import { GlassContainer } from './GlassContainer';
+import { GlassSurface } from './GlassSurface';
 
 export interface ClayModalProps {
   visible: boolean;
@@ -30,6 +33,7 @@ export function ClayModal({
   footer,
 }: ClayModalProps) {
   const theme = useAppTheme();
+  const isLiquidGlass = useLiquidGlass();
 
   return (
     <Modal
@@ -86,20 +90,39 @@ export function ClayModal({
                 ) : null}
               </View>
 
-              <Pressable
-                onPress={onClose}
-                accessibilityRole="button"
-                accessibilityLabel="Fechar"
-                style={[
-                  styles.closeBtn,
-                  {
-                    backgroundColor: theme.colors.surface,
-                    borderRadius: theme.radii.pill,
-                  },
-                ]}
-              >
-                <X size={20} color={theme.colors.textPrimary} />
-              </Pressable>
+              {isLiquidGlass ? (
+                <GlassContainer spacing={8}>
+                  <Pressable
+                    onPress={onClose}
+                    accessibilityRole="button"
+                    accessibilityLabel="Fechar"
+                  >
+                    <GlassSurface
+                      interactive
+                      tintColor="rgba(122, 90, 248, 0.16)"
+                      borderRadius={theme.radii.pill}
+                      style={styles.closeGlassBtn}
+                    >
+                      <X size={20} color="#1E1633" strokeWidth={2.4} />
+                    </GlassSurface>
+                  </Pressable>
+                </GlassContainer>
+              ) : (
+                <Pressable
+                  onPress={onClose}
+                  accessibilityRole="button"
+                  accessibilityLabel="Fechar"
+                  style={[
+                    styles.closeBtn,
+                    {
+                      backgroundColor: theme.colors.surface,
+                      borderRadius: theme.radii.pill,
+                    },
+                  ]}
+                >
+                  <X size={20} color={theme.colors.textPrimary} />
+                </Pressable>
+              )}
             </View>
 
             <ScrollView
@@ -161,6 +184,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1.5,
     borderColor: 'rgba(138, 111, 232, 0.16)',
+  },
+  closeGlassBtn: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollBody: {
     paddingBottom: 12,

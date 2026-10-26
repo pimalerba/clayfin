@@ -1,5 +1,6 @@
 import React from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Home,
@@ -184,14 +185,11 @@ export function ClayTabBar({
                 ? options.title
                 : route.name;
 
+            const nestedState = (route as { state?: { index?: number } }).state;
             const isSubScreenOfMore =
-              activeRouteName === 'goals' ||
-              activeRouteName === 'reports' ||
-              activeRouteName === 'settings';
+              route.name === 'more' && (nestedState?.index ?? 0) > 0;
 
-            const isFocused =
-              activeRouteName === route.name ||
-              (route.name === 'more' && isSubScreenOfMore);
+            const isFocused = activeRouteName === route.name;
 
             const onPress = () => {
               const eventEmitter = navigation ?? emitter;
@@ -201,15 +199,15 @@ export function ClayTabBar({
                 canPreventDefault: true,
               });
 
-              const shouldNavigate =
-                activeRouteName !== route.name ||
-                (route.name === 'more' && isSubScreenOfMore);
-
-              if (shouldNavigate && !event?.defaultPrevented) {
-                if (navigateToTab) {
-                  navigateToTab(route.key);
-                } else {
-                  navigation?.navigate(route.name, route.params);
+              if (!event?.defaultPrevented) {
+                if (activeRouteName !== route.name) {
+                  if (navigateToTab) {
+                    navigateToTab(route.key);
+                  } else {
+                    navigation?.navigate(route.name, route.params);
+                  }
+                } else if (isSubScreenOfMore) {
+                  router.navigate('/(tabs)/more');
                 }
               }
             };

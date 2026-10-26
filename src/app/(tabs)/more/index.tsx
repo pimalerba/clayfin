@@ -1,6 +1,6 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import React, { useRef } from 'react';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router, useScrollToTop } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   BarChart3,
@@ -11,12 +11,20 @@ import {
   ShieldCheck,
 } from 'lucide-react-native';
 import { useAppTheme } from '@/theme';
-import { useAvailableAccountBalance, useGoals } from '@/hooks';
+import {
+  useAvailableAccountBalance,
+  useGoals,
+  useWindowClass,
+} from '@/hooks';
 import { ClayCard } from '@/components/ui';
 import { formatCentsToBRL } from '@/utils/currency';
 
 export default function MoreScreen() {
   const theme = useAppTheme();
+  const { maxContentWidth } = useWindowClass();
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  useScrollToTop(scrollRef as any);
+
   const { data: goals = [] } = useGoals();
   const { data: availableAccountCents = 0 } = useAvailableAccountBalance();
 
@@ -27,11 +35,21 @@ export default function MoreScreen() {
 
   return (
     <SafeAreaView
-      edges={['top']}
+      edges={Platform.OS === 'ios' ? ['top', 'left', 'right'] : ['top']}
       style={[styles.safe, { backgroundColor: theme.colors.background }]}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        ref={scrollRef}
+        contentContainerStyle={[
+          styles.scrollContent,
+          maxContentWidth
+            ? {
+                maxWidth: maxContentWidth,
+                width: '100%',
+                alignSelf: 'center',
+              }
+            : null,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
@@ -52,7 +70,7 @@ export default function MoreScreen() {
 
         <ClayCard
           radius="xl"
-          onPress={() => router.push('/(tabs)/goals')}
+          onPress={() => router.push('/(tabs)/more/goals')}
           style={styles.menuCard}
         >
           <View style={styles.menuRow}>
@@ -98,7 +116,7 @@ export default function MoreScreen() {
 
         <ClayCard
           radius="xl"
-          onPress={() => router.push('/(tabs)/reports')}
+          onPress={() => router.push('/(tabs)/more/reports')}
           style={styles.menuCard}
         >
           <View style={styles.menuRow}>
@@ -134,7 +152,7 @@ export default function MoreScreen() {
 
         <ClayCard
           radius="xl"
-          onPress={() => router.push('/(tabs)/settings')}
+          onPress={() => router.push('/(tabs)/more/settings')}
           style={styles.menuCard}
         >
           <View style={styles.menuRow}>

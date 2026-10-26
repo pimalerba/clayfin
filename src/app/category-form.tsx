@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import {
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,6 +18,7 @@ import {
   useCategories,
   useCreateCategory,
   useDeleteCategory,
+  useLiquidGlass,
   useUpdateCategory,
 } from '@/hooks';
 import { CategoryRepository } from '@/repositories';
@@ -26,12 +28,15 @@ import {
   ClayCard,
   ClayChip,
   ClayInput,
+  GlassContainer,
+  GlassSurface,
 } from '@/components/ui';
 import { CategoryFormData, categoryFormSchema } from '@/features/schemas';
 import { AVAILABLE_ICON_NAMES, DynamicIcon } from '@/utils/icons';
 
 export default function CategoryFormScreen() {
   const theme = useAppTheme();
+  const isLiquidGlass = useLiquidGlass();
   const params = useLocalSearchParams<{ id?: string }>();
   const isEditing = Boolean(params.id);
 
@@ -150,26 +155,63 @@ export default function CategoryFormScreen() {
 
   return (
     <SafeAreaView
-      style={[styles.safe, { backgroundColor: theme.colors.background }]}
+      edges={Platform.OS === 'ios' ? ['bottom'] : ['top', 'bottom']}
+      style={[
+        styles.safe,
+        {
+          backgroundColor: isLiquidGlass
+            ? 'transparent'
+            : theme.colors.background,
+        },
+      ]}
     >
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          Platform.OS === 'ios' ? { paddingTop: 18 } : null,
+        ]}
+      >
         <Text
-          style={[theme.typography.h1, { color: theme.colors.textPrimary }]}
+          style={[
+            theme.typography.h1,
+            { color: isLiquidGlass ? '#1E1633' : theme.colors.textPrimary },
+          ]}
         >
           {isEditing ? 'Editar Categoria' : 'Nova Categoria'}
         </Text>
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel="Fechar"
-          style={[styles.iconBtn, { backgroundColor: theme.colors.surface }]}
-        >
-          <X size={22} color={theme.colors.textPrimary} />
-        </Pressable>
+        {isLiquidGlass ? (
+          <GlassContainer spacing={8}>
+            <Pressable
+              onPress={() => router.back()}
+              accessibilityRole="button"
+              accessibilityLabel="Fechar"
+            >
+              <GlassSurface
+                interactive
+                tintColor="rgba(122, 90, 248, 0.16)"
+                borderRadius={22}
+                style={styles.iconBtn}
+              >
+                <X size={22} color="#1E1633" strokeWidth={2.4} />
+              </GlassSurface>
+            </Pressable>
+          </GlassContainer>
+        ) : (
+          <Pressable
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Fechar"
+            style={[styles.iconBtn, { backgroundColor: theme.colors.surface }]}
+          >
+            <X size={22} color={theme.colors.textPrimary} />
+          </Pressable>
+        )}
       </View>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
+        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >

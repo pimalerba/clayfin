@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { Stack } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
+import { DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import {
@@ -14,6 +14,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { getDatabase } from '@/db';
+import { useLiquidGlass } from '@/hooks/useLiquidGlass';
 import { useAppTheme } from '@/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -29,6 +30,7 @@ const queryClient = new QueryClient({
 
 export default function RootLayout() {
   const theme = useAppTheme();
+  const isLiquidGlass = useLiquidGlass();
   const [dbReady, setDbReady] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
@@ -37,6 +39,29 @@ export default function RootLayout() {
     Nunito_700Bold,
     Nunito_800ExtraBold,
   });
+
+  const formSheetOptions = useMemo(
+    () =>
+      Platform.OS === 'ios'
+        ? ({
+            presentation: 'formSheet' as const,
+            sheetAllowedDetents: [0.78, 1.0],
+            sheetInitialDetentIndex: 0,
+            sheetGrabberVisible: true,
+            sheetExpandsWhenScrolledToEdge: true,
+            sheetCornerRadius: 28,
+            contentStyle: {
+              backgroundColor: isLiquidGlass
+                ? 'transparent'
+                : theme.colors.background,
+            },
+          })
+        : ({
+            presentation: 'modal' as const,
+            animation: 'slide_from_bottom' as const,
+          }),
+    [isLiquidGlass, theme.colors.background]
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -54,6 +79,23 @@ export default function RootLayout() {
   }, []);
 
   const isAppReady = (fontsLoaded || Boolean(fontError)) && dbReady;
+
+  const navigationTheme = useMemo<Theme>(
+    () => ({
+      ...DefaultTheme,
+      dark: false,
+      colors: {
+        ...DefaultTheme.colors,
+        primary: theme.colors.primary,
+        background: '#F2EFFA',
+        card: theme.colors.surface,
+        text: theme.colors.textPrimary,
+        border: theme.colors.border,
+        notification: theme.colors.expense,
+      },
+    }),
+    [theme]
+  );
 
   useEffect(() => {
     if (isAppReady) {
@@ -78,49 +120,42 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <StatusBar style="dark" />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: theme.colors.background },
-            }}
-          >
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="onboarding"
-              options={{
+          <ThemeProvider value={navigationTheme}>
+            <StatusBar style="dark" />
+            <Stack
+              screenOptions={{
                 headerShown: false,
-                animation: 'fade',
+                contentStyle: { backgroundColor: theme.colors.background },
               }}
-            />
-            <Stack.Screen
-              name="transaction-form"
-              options={{
-                presentation: 'modal',
-                animation: 'slide_from_bottom',
-              }}
-            />
-            <Stack.Screen
-              name="category-form"
-              options={{
-                presentation: 'modal',
-                animation: 'slide_from_bottom',
-              }}
-            />
-            <Stack.Screen
-              name="goal-form"
-              options={{
-                presentation: 'modal',
-                animation: 'slide_from_bottom',
-              }}
-            />
-            <Stack.Screen
-              name="goal-detail"
-              options={{
-                animation: 'slide_from_right',
-              }}
-            />
-          </Stack>
+            >
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="onboarding"
+                options={{
+                  headerShown: false,
+                  animation: 'fade',
+                }}
+              />
+              <Stack.Screen
+                name="transaction-form"
+                options={formSheetOptions}
+              />
+              <Stack.Screen
+                name="category-form"
+                options={formSheetOptions}
+              />
+              <Stack.Screen
+                name="goal-form"
+                options={formSheetOptions}
+              />
+              <Stack.Screen
+                name="goal-detail"
+                options={{
+                  animation: 'slide_from_right',
+                }}
+              />
+            </Stack>
+          </ThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -1,6 +1,13 @@
-import React, { useEffect } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { router, useScrollToTop } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowDownCircle,
@@ -14,10 +21,12 @@ import {
 import { useAppTheme } from '@/theme';
 import {
   useBudgets,
+  useDeleteTransaction,
   useGoals,
   useMonthlySummary,
   useOnboardingStatus,
   useTransactions,
+  useWindowClass,
 } from '@/hooks';
 import { useUIStore } from '@/store/useUIStore';
 import {
@@ -29,12 +38,18 @@ import {
 import { MonthSelector } from '@/components/MonthSelector';
 import { TransactionRow } from '@/components/TransactionRow';
 import { formatCentsToBRL } from '@/utils/currency';
-import { calculateBudgetProgress, calculateGoalProgress } from '@/utils/progress';
+import {
+  calculateBudgetProgress,
+  calculateGoalProgress,
+} from '@/utils/progress';
 import { DynamicIcon } from '@/utils/icons';
 
 export default function HomeScreen() {
   const theme = useAppTheme();
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  useScrollToTop(scrollRef as any);
   const { selectedMonth, setSelectedMonth } = useUIStore();
+  const { isRegular, maxContentWidth, columnGap } = useWindowClass();
 
   const { data: onboardingDone, isLoading: checkingOnboarding } =
     useOnboardingStatus();
@@ -52,6 +67,7 @@ export default function HomeScreen() {
     limit: 5,
   });
   const { data: goals = [] } = useGoals();
+  const deleteTransactionMutation = useDeleteTransaction();
 
   const totalBudgetLimit = budgets.reduce((acc, b) => acc + b.limit_cents, 0);
   const totalBudgetSpent = budgets.reduce((acc, b) => acc + b.spent_cents, 0);
@@ -60,182 +76,171 @@ export default function HomeScreen() {
     totalBudgetLimit
   );
 
-  return (
-    <SafeAreaView
-      edges={['top']}
-      style={[styles.safe, { backgroundColor: theme.colors.background }]}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.topHeader}>
-          <View>
-            <View style={styles.brandBadge}>
-              <Sparkles size={14} color={theme.colors.primary} />
-              <Text
-                style={[
-                  theme.typography.caption,
-                  { color: theme.colors.primary, marginLeft: 4 },
-                ]}
-              >
-                Clayfin • 100% Local
-              </Text>
-            </View>
-            <Text
-              style={[theme.typography.h1, { color: theme.colors.textPrimary }]}
-            >
-              Visão Geral
-            </Text>
-          </View>
-
-          <ClayButton
-            title="Nova"
-            size="sm"
-            icon={<Plus size={16} color="#FFFFFF" />}
-            onPress={() => router.push('/transaction-form')}
-          />
+  const heroSection = (
+    <ClayCard variant="primary" radius="xxl" style={styles.heroCard}>
+      <View style={styles.heroTopRow}>
+        <View style={styles.walletLabelRow}>
+          <Wallet size={18} color="#E6DEFF" />
+          <Text
+            style={[
+              theme.typography.bodySmall,
+              { color: '#E6DEFF', marginLeft: 8 },
+            ]}
+          >
+            Saldo Disponível em Conta
+          </Text>
         </View>
-
-        <MonthSelector
-          selectedMonth={selectedMonth}
-          onChangeMonth={setSelectedMonth}
-        />
-
-        {/* Card de Saldo Principal */}
-        <ClayCard variant="primary" radius="xxl" style={styles.heroCard}>
-          <View style={styles.heroTopRow}>
-            <View style={styles.walletLabelRow}>
-              <Wallet size={18} color="#E6DEFF" />
-              <Text
-                style={[
-                  theme.typography.bodySmall,
-                  { color: '#E6DEFF', marginLeft: 8 },
-                ]}
-              >
-                Saldo Disponível em Conta
-              </Text>
-            </View>
-            {(summary?.total_saved_in_goals_cents ?? 0) > 0 ? (
-              <View style={styles.savedMiniTag}>
-                <PiggyBank size={13} color="#FFFFFF" />
-                <Text
-                  style={[
-                    theme.typography.caption,
-                    { color: '#FFFFFF', marginLeft: 4 },
-                  ]}
-                >
-                  Guardado:{' '}
-                  {formatCentsToBRL(summary?.total_saved_in_goals_cents ?? 0)}
-                </Text>
-              </View>
-            ) : null}
-          </View>
-
-          <Text
-            style={[theme.typography.hero, { color: '#FFFFFF', marginTop: 4 }]}
-          >
-            {formatCentsToBRL(summary?.available_account_cents ?? 0)}
-          </Text>
-
-          <View style={styles.quickActionRow}>
-            <Pressable
-              onPress={() =>
-                router.push({
-                  pathname: '/transaction-form',
-                  params: { initialType: 'income' },
-                })
-              }
-              accessibilityRole="button"
-              accessibilityLabel="Adicionar receita"
-              style={styles.quickPill}
-            >
-              <ArrowUpCircle size={18} color="#B8F7D8" />
-              <View style={{ marginLeft: 8 }}>
-                <Text style={[theme.typography.caption, { color: '#E6DEFF' }]}>
-                  Receitas
-                </Text>
-                <Text
-                  style={[
-                    theme.typography.bodySmall,
-                    {
-                      color: '#FFFFFF',
-                      fontFamily: theme.fontFamilies.extraBold,
-                    },
-                  ]}
-                >
-                  {formatCentsToBRL(summary?.total_income_cents ?? 0)}
-                </Text>
-              </View>
-            </Pressable>
-
-            <Pressable
-              onPress={() =>
-                router.push({
-                  pathname: '/transaction-form',
-                  params: { initialType: 'expense' },
-                })
-              }
-              accessibilityRole="button"
-              accessibilityLabel="Adicionar despesa"
-              style={styles.quickPill}
-            >
-              <ArrowDownCircle size={18} color="#FFC6C2" />
-              <View style={{ marginLeft: 8 }}>
-                <Text style={[theme.typography.caption, { color: '#E6DEFF' }]}>
-                  Despesas
-                </Text>
-                <Text
-                  style={[
-                    theme.typography.bodySmall,
-                    {
-                      color: '#FFFFFF',
-                      fontFamily: theme.fontFamilies.extraBold,
-                    },
-                  ]}
-                >
-                  {formatCentsToBRL(summary?.total_expense_cents ?? 0)}
-                </Text>
-              </View>
-            </Pressable>
-          </View>
-        </ClayCard>
-
-        {/* Orçamento em Andamento */}
-        <View style={styles.sectionHeader}>
-          <Text
-            style={[theme.typography.h3, { color: theme.colors.textPrimary }]}
-          >
-            Orçamento em Andamento
-          </Text>
-          <Pressable
-            onPress={() => router.push('/(tabs)/budgets')}
-            accessibilityRole="button"
-            style={styles.seeAllBtn}
-          >
+        {(summary?.total_saved_in_goals_cents ?? 0) > 0 ? (
+          <View style={styles.savedMiniTag}>
+            <PiggyBank size={13} color="#FFFFFF" />
             <Text
               style={[
                 theme.typography.caption,
-                { color: theme.colors.primary },
+                { color: '#FFFFFF', marginLeft: 4 },
               ]}
             >
-              Ver todos
+              Guardado:{' '}
+              {formatCentsToBRL(summary?.total_saved_in_goals_cents ?? 0)}
             </Text>
-            <ArrowRight
-              size={14}
-              color={theme.colors.primary}
-              style={{ marginLeft: 4 }}
-            />
-          </Pressable>
-        </View>
+          </View>
+        ) : null}
+      </View>
 
-        {budgets.length === 0 ? (
-          <ClayCard
-            variant="subtle"
-            radius="xl"
-            onPress={() => router.push('/(tabs)/budgets')}
-            style={{ marginBottom: 18 }}
+      <Text
+        maxFontSizeMultiplier={1.3}
+        style={[theme.typography.hero, { color: '#FFFFFF', marginTop: 4 }]}
+      >
+        {formatCentsToBRL(summary?.available_account_cents ?? 0)}
+      </Text>
+
+      <View style={styles.quickActionRow}>
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: '/transaction-form',
+              params: { initialType: 'income' },
+            })
+          }
+          accessibilityRole="button"
+          accessibilityLabel="Adicionar receita"
+          style={styles.quickPill}
+        >
+          <ArrowUpCircle size={18} color="#B8F7D8" />
+          <View style={{ marginLeft: 8, flexShrink: 1 }}>
+            <Text style={[theme.typography.caption, { color: '#E6DEFF' }]}>
+              Receitas
+            </Text>
+            <Text
+              maxFontSizeMultiplier={1.3}
+              style={[
+                theme.typography.bodySmall,
+                {
+                  color: '#FFFFFF',
+                  fontFamily: theme.fontFamilies.extraBold,
+                },
+              ]}
+            >
+              {formatCentsToBRL(summary?.total_income_cents ?? 0)}
+            </Text>
+          </View>
+        </Pressable>
+
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: '/transaction-form',
+              params: { initialType: 'expense' },
+            })
+          }
+          accessibilityRole="button"
+          accessibilityLabel="Adicionar despesa"
+          style={styles.quickPill}
+        >
+          <ArrowDownCircle size={18} color="#FFC6C2" />
+          <View style={{ marginLeft: 8, flexShrink: 1 }}>
+            <Text style={[theme.typography.caption, { color: '#E6DEFF' }]}>
+              Despesas
+            </Text>
+            <Text
+              maxFontSizeMultiplier={1.3}
+              style={[
+                theme.typography.bodySmall,
+                {
+                  color: '#FFFFFF',
+                  fontFamily: theme.fontFamilies.extraBold,
+                },
+              ]}
+            >
+              {formatCentsToBRL(summary?.total_expense_cents ?? 0)}
+            </Text>
+          </View>
+        </Pressable>
+      </View>
+    </ClayCard>
+  );
+
+  const budgetSection = (
+    <View>
+      <View style={styles.sectionHeader}>
+        <Text
+          accessibilityRole="header"
+          style={[theme.typography.h3, { color: theme.colors.textPrimary }]}
+        >
+          Orçamento em Andamento
+        </Text>
+        <Pressable
+          onPress={() => router.push('/(tabs)/budgets')}
+          accessibilityRole="button"
+          accessibilityLabel="Ver todos os orçamentos"
+          style={styles.seeAllBtn}
+        >
+          <Text
+            style={[theme.typography.caption, { color: theme.colors.primary }]}
           >
+            Ver todos
+          </Text>
+          <ArrowRight
+            size={14}
+            color={theme.colors.primary}
+            style={{ marginLeft: 4 }}
+          />
+        </Pressable>
+      </View>
+
+      {budgets.length === 0 ? (
+        <ClayCard
+          variant="subtle"
+          radius="xl"
+          onPress={() => router.push('/(tabs)/budgets')}
+          style={{ marginBottom: 18 }}
+        >
+          <Text
+            style={[
+              theme.typography.body,
+              {
+                color: theme.colors.textPrimary,
+                fontFamily: theme.fontFamilies.bold,
+              },
+            ]}
+          >
+            Nenhum limite definido neste mês
+          </Text>
+          <Text
+            style={[
+              theme.typography.bodySmall,
+              { color: theme.colors.textSecondary, marginTop: 2 },
+            ]}
+          >
+            Toque aqui para planejar seus gastos por categoria.
+          </Text>
+        </ClayCard>
+      ) : (
+        <ClayCard
+          radius="xl"
+          onPress={() => router.push('/(tabs)/budgets')}
+          style={{ marginBottom: 18 }}
+        >
+          <View style={styles.budgetRowTop}>
             <Text
               style={[
                 theme.typography.body,
@@ -245,24 +250,73 @@ export default function HomeScreen() {
                 },
               ]}
             >
-              Nenhum limite definido neste mês
+              {formatCentsToBRL(totalBudgetSpent)} gastos
             </Text>
             <Text
               style={[
                 theme.typography.bodySmall,
-                { color: theme.colors.textSecondary, marginTop: 2 },
+                { color: theme.colors.textSecondary },
               ]}
             >
-              Toque aqui para planejar seus gastos por categoria.
+              de {formatCentsToBRL(totalBudgetLimit)} ({budgetProgress.percentage}
+              %)
             </Text>
-          </ClayCard>
-        ) : (
-          <ClayCard
-            radius="xl"
-            onPress={() => router.push('/(tabs)/budgets')}
-            style={{ marginBottom: 18 }}
+          </View>
+          <ClayProgressBar
+            percentage={budgetProgress.percentage}
+            alertLevel={budgetProgress.alertLevel}
+            style={{ marginTop: 10 }}
+          />
+        </ClayCard>
+      )}
+    </View>
+  );
+
+  const goalsSection = (
+    <View>
+      <View style={styles.sectionHeader}>
+        <Text
+          accessibilityRole="header"
+          style={[theme.typography.h3, { color: theme.colors.textPrimary }]}
+        >
+          Meus Cofrinhos
+        </Text>
+        <Pressable
+          onPress={() => router.push('/(tabs)/more/goals')}
+          accessibilityRole="button"
+          accessibilityLabel="Gerenciar metas e cofrinhos"
+          style={styles.seeAllBtn}
+        >
+          <Text
+            style={[theme.typography.caption, { color: theme.colors.primary }]}
           >
-            <View style={styles.budgetRowTop}>
+            Gerenciar
+          </Text>
+          <ArrowRight
+            size={14}
+            color={theme.colors.primary}
+            style={{ marginLeft: 4 }}
+          />
+        </Pressable>
+      </View>
+
+      {goals.length === 0 ? (
+        <ClayCard
+          variant="subtle"
+          radius="xl"
+          onPress={() => router.push('/goal-form')}
+          style={{ marginBottom: 18 }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View
+              style={[
+                styles.goalMiniIcon,
+                { backgroundColor: theme.colors.primaryLight },
+              ]}
+            >
+              <PiggyBank size={20} color={theme.colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
               <Text
                 style={[
                   theme.typography.body,
@@ -272,7 +326,7 @@ export default function HomeScreen() {
                   },
                 ]}
               >
-                {formatCentsToBRL(totalBudgetSpent)} gastos
+                Criar primeiro cofrinho
               </Text>
               <Text
                 style={[
@@ -280,206 +334,219 @@ export default function HomeScreen() {
                   { color: theme.colors.textSecondary },
                 ]}
               >
-                de {formatCentsToBRL(totalBudgetLimit)} ({budgetProgress.percentage}
-                %)
+                Guarde dinheiro para seus objetivos
               </Text>
             </View>
-            <ClayProgressBar
-              percentage={budgetProgress.percentage}
-              alertLevel={budgetProgress.alertLevel}
-              style={{ marginTop: 10 }}
-            />
-          </ClayCard>
-        )}
-
-        {/* Atalho para Metas / Cofrinhos */}
-        <View style={styles.sectionHeader}>
-          <Text
-            style={[theme.typography.h3, { color: theme.colors.textPrimary }]}
-          >
-            Meus Cofrinhos
-          </Text>
-          <Pressable
-            onPress={() => router.push('/(tabs)/goals')}
-            accessibilityRole="button"
-            style={styles.seeAllBtn}
-          >
-            <Text
-              style={[
-                theme.typography.caption,
-                { color: theme.colors.primary },
-              ]}
-            >
-              Gerenciar
-            </Text>
-            <ArrowRight
-              size={14}
-              color={theme.colors.primary}
-              style={{ marginLeft: 4 }}
-            />
-          </Pressable>
-        </View>
-
-        {goals.length === 0 ? (
-          <ClayCard
-            variant="subtle"
-            radius="xl"
-            onPress={() => router.push('/goal-form')}
-            style={{ marginBottom: 18 }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View
-                style={[
-                  styles.goalMiniIcon,
-                  { backgroundColor: theme.colors.primaryLight },
-                ]}
+          </View>
+        </ClayCard>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.goalsHorizontal}
+        >
+          {goals.slice(0, 4).map((goal) => {
+            const prog = calculateGoalProgress(
+              goal.current_cents,
+              goal.target_cents
+            );
+            return (
+              <ClayCard
+                key={goal.id}
+                radius="xl"
+                onPress={() =>
+                  router.push({
+                    pathname: '/goal-detail',
+                    params: { id: goal.id },
+                  })
+                }
+                style={styles.goalShortcutCard}
               >
-                <PiggyBank size={20} color={theme.colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
+                <View style={styles.goalShortcutHeader}>
+                  <View
+                    style={[
+                      styles.goalMiniIcon,
+                      { backgroundColor: theme.colors.primaryLight },
+                    ]}
+                  >
+                    <DynamicIcon
+                      name={goal.icon}
+                      size={18}
+                      color={theme.colors.primary}
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      theme.typography.caption,
+                      { color: theme.colors.primaryDark },
+                    ]}
+                  >
+                    {prog.percentage}%
+                  </Text>
+                </View>
                 <Text
+                  numberOfLines={1}
                   style={[
-                    theme.typography.body,
-                    {
-                      color: theme.colors.textPrimary,
-                      fontFamily: theme.fontFamilies.bold,
-                    },
+                    theme.typography.h3,
+                    { color: theme.colors.textPrimary, marginTop: 6 },
                   ]}
                 >
-                  Criar primeiro cofrinho
+                  {goal.name}
                 </Text>
                 <Text
                   style={[
                     theme.typography.bodySmall,
-                    { color: theme.colors.textSecondary },
+                    {
+                      color: theme.colors.textSecondary,
+                      marginBottom: 8,
+                    },
                   ]}
                 >
-                  Guarde dinheiro para seus objetivos
+                  {formatCentsToBRL(prog.currentCents)}
+                </Text>
+                <ClayProgressBar percentage={prog.percentage} height={10} />
+              </ClayCard>
+            );
+          })}
+        </ScrollView>
+      )}
+    </View>
+  );
+
+  const recentTransactionsSection = (
+    <View>
+      <View style={styles.sectionHeader}>
+        <Text
+          accessibilityRole="header"
+          style={[theme.typography.h3, { color: theme.colors.textPrimary }]}
+        >
+          Últimas Transações
+        </Text>
+        <Pressable
+          onPress={() => router.push('/(tabs)/transactions')}
+          accessibilityRole="button"
+          accessibilityLabel="Ver histórico completo de transações"
+          style={styles.seeAllBtn}
+        >
+          <Text
+            style={[theme.typography.caption, { color: theme.colors.primary }]}
+          >
+            Ver histórico
+          </Text>
+          <ArrowRight
+            size={14}
+            color={theme.colors.primary}
+            style={{ marginLeft: 4 }}
+          />
+        </Pressable>
+      </View>
+
+      {recentTransactions.length === 0 ? (
+        <ClayEmptyState
+          title="Sem movimentações neste mês"
+          description="Registre suas receitas e despesas para acompanhar seu saldo em tempo real."
+          actionLabel="Registrar Transação"
+          onAction={() => router.push('/transaction-form')}
+        />
+      ) : (
+        recentTransactions.map((tx) => (
+          <TransactionRow
+            key={tx.id}
+            transaction={tx}
+            onPress={() =>
+              router.push({
+                pathname: '/transaction-form',
+                params: { id: tx.id },
+              })
+            }
+            onEdit={() =>
+              router.push({
+                pathname: '/transaction-form',
+                params: { id: tx.id },
+              })
+            }
+            onDelete={() => deleteTransactionMutation.mutate(tx.id)}
+          />
+        ))
+      )}
+    </View>
+  );
+
+  return (
+    <SafeAreaView
+      edges={Platform.OS === 'ios' ? ['top', 'left', 'right'] : ['top']}
+      style={[styles.safe, { backgroundColor: theme.colors.background }]}
+    >
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View
+          style={[
+            styles.contentWrapper,
+            maxContentWidth
+              ? { maxWidth: maxContentWidth, alignSelf: 'center' }
+              : null,
+          ]}
+        >
+          <View style={styles.topHeader}>
+            <View style={{ flex: 1, paddingRight: 10 }}>
+              <View style={styles.brandBadge}>
+                <Sparkles size={14} color={theme.colors.primary} />
+                <Text
+                  style={[
+                    theme.typography.caption,
+                    { color: theme.colors.primary, marginLeft: 4 },
+                  ]}
+                >
+                  Clayfin • 100% Local
                 </Text>
               </View>
+              <Text
+                accessibilityRole="header"
+                style={[
+                  theme.typography.h1,
+                  { color: theme.colors.textPrimary },
+                ]}
+              >
+                Visão Geral
+              </Text>
             </View>
-          </ClayCard>
-        ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.goalsHorizontal}
-          >
-            {goals.slice(0, 4).map((goal) => {
-              const prog = calculateGoalProgress(
-                goal.current_cents,
-                goal.target_cents
-              );
-              return (
-                <ClayCard
-                  key={goal.id}
-                  radius="xl"
-                  onPress={() =>
-                    router.push({
-                      pathname: '/goal-detail',
-                      params: { id: goal.id },
-                    })
-                  }
-                  style={styles.goalShortcutCard}
-                >
-                  <View style={styles.goalShortcutHeader}>
-                    <View
-                      style={[
-                        styles.goalMiniIcon,
-                        { backgroundColor: theme.colors.primaryLight },
-                      ]}
-                    >
-                      <DynamicIcon
-                        name={goal.icon}
-                        size={18}
-                        color={theme.colors.primary}
-                      />
-                    </View>
-                    <Text
-                      style={[
-                        theme.typography.caption,
-                        { color: theme.colors.primaryDark },
-                      ]}
-                    >
-                      {prog.percentage}%
-                    </Text>
-                  </View>
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      theme.typography.h3,
-                      { color: theme.colors.textPrimary, marginTop: 6 },
-                    ]}
-                  >
-                    {goal.name}
-                  </Text>
-                  <Text
-                    style={[
-                      theme.typography.bodySmall,
-                      {
-                        color: theme.colors.textSecondary,
-                        marginBottom: 8,
-                      },
-                    ]}
-                  >
-                    {formatCentsToBRL(prog.currentCents)}
-                  </Text>
-                  <ClayProgressBar percentage={prog.percentage} height={10} />
-                </ClayCard>
-              );
-            })}
-          </ScrollView>
-        )}
 
-        {/* Últimas Transações */}
-        <View style={styles.sectionHeader}>
-          <Text
-            style={[theme.typography.h3, { color: theme.colors.textPrimary }]}
-          >
-            Últimas Transações
-          </Text>
-          <Pressable
-            onPress={() => router.push('/(tabs)/transactions')}
-            accessibilityRole="button"
-            style={styles.seeAllBtn}
-          >
-            <Text
-              style={[
-                theme.typography.caption,
-                { color: theme.colors.primary },
-              ]}
-            >
-              Ver histórico
-            </Text>
-            <ArrowRight
-              size={14}
-              color={theme.colors.primary}
-              style={{ marginLeft: 4 }}
+            <ClayButton
+              title="Nova"
+              size="sm"
+              icon={<Plus size={16} color="#FFFFFF" />}
+              onPress={() => router.push('/transaction-form')}
             />
-          </Pressable>
-        </View>
+          </View>
 
-        {recentTransactions.length === 0 ? (
-          <ClayEmptyState
-            title="Sem movimentações neste mês"
-            description="Registre suas receitas e despesas para acompanhar seu saldo em tempo real."
-            actionLabel="Registrar Transação"
-            onAction={() => router.push('/transaction-form')}
+          <MonthSelector
+            selectedMonth={selectedMonth}
+            onChangeMonth={setSelectedMonth}
           />
-        ) : (
-          recentTransactions.map((tx) => (
-            <TransactionRow
-              key={tx.id}
-              transaction={tx}
-              onPress={() =>
-                router.push({
-                  pathname: '/transaction-form',
-                  params: { id: tx.id },
-                })
-              }
-            />
-          ))
-        )}
+
+          {isRegular ? (
+            <View style={[styles.regularColumnsRow, { gap: columnGap }]}>
+              <View style={styles.regularColumn}>
+                {heroSection}
+                {budgetSection}
+              </View>
+              <View style={styles.regularColumn}>
+                {goalsSection}
+                {recentTransactionsSection}
+              </View>
+            </View>
+          ) : (
+            <>
+              {heroSection}
+              {budgetSection}
+              {goalsSection}
+              {recentTransactionsSection}
+            </>
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -493,6 +560,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingBottom: 110,
   },
+  contentWrapper: {
+    width: '100%',
+  },
   topHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -505,6 +575,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 2,
   },
+  regularColumnsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  regularColumn: {
+    flex: 1,
+  },
   heroCard: {
     marginBottom: 20,
   },
@@ -512,6 +589,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   walletLabelRow: {
     flexDirection: 'row',
@@ -554,6 +633,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   goalsHorizontal: {
     gap: 12,

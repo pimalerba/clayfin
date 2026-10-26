@@ -1,16 +1,30 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Calendar, PiggyBank, Plus, Sparkles } from 'lucide-react-native';
 import { useAppTheme } from '@/theme';
-import { useAvailableAccountBalance, useGoals } from '@/hooks';
+import {
+  useAvailableAccountBalance,
+  useGoals,
+  useLiquidGlass,
+  useWindowClass,
+} from '@/hooks';
 import {
   ClayButton,
   ClayCard,
   ClayEmptyState,
   ClayLoadingState,
   ClayProgressBar,
+  GlassContainer,
+  GlassSurface,
 } from '@/components/ui';
 import { formatCentsToBRL } from '@/utils/currency';
 import { formatDateShortPtBR } from '@/utils/date';
@@ -19,8 +33,18 @@ import { DynamicIcon } from '@/utils/icons';
 
 export default function GoalsScreen() {
   const theme = useAppTheme();
+  const isLiquidGlass = useLiquidGlass();
+  const { maxContentWidth } = useWindowClass();
   const { data: goals = [], isLoading } = useGoals();
   const { data: availableAccountCents = 0 } = useAvailableAccountBalance();
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/more');
+    }
+  };
 
   const totalSavedCents = goals.reduce(
     (acc, g) => acc + Math.max(0, g.current_cents),
@@ -30,26 +54,54 @@ export default function GoalsScreen() {
 
   return (
     <SafeAreaView
-      edges={['top']}
+      edges={Platform.OS === 'ios' ? ['top', 'left', 'right'] : ['top']}
       style={[styles.safe, { backgroundColor: theme.colors.background }]}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          maxContentWidth
+            ? {
+                maxWidth: maxContentWidth,
+                width: '100%',
+                alignSelf: 'center',
+              }
+            : null,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
           <View style={styles.titleRow}>
-            <Pressable
-              onPress={() => router.push('/(tabs)/more')}
-              accessibilityRole="button"
-              accessibilityLabel="Voltar para Mais"
-              style={[
-                styles.backBtn,
-                { backgroundColor: theme.colors.surface },
-              ]}
-            >
-              <ArrowLeft size={20} color={theme.colors.textPrimary} />
-            </Pressable>
+            {isLiquidGlass ? (
+              <GlassContainer spacing={8}>
+                <Pressable
+                  onPress={handleBack}
+                  accessibilityRole="button"
+                  accessibilityLabel="Voltar para Mais"
+                >
+                  <GlassSurface
+                    interactive
+                    tintColor="rgba(122, 90, 248, 0.16)"
+                    borderRadius={14}
+                    style={styles.backBtn}
+                  >
+                    <ArrowLeft size={20} color="#1E1633" strokeWidth={2.4} />
+                  </GlassSurface>
+                </Pressable>
+              </GlassContainer>
+            ) : (
+              <Pressable
+                onPress={handleBack}
+                accessibilityRole="button"
+                accessibilityLabel="Voltar para Mais"
+                style={[
+                  styles.backBtn,
+                  { backgroundColor: theme.colors.surface },
+                ]}
+              >
+                <ArrowLeft size={20} color={theme.colors.textPrimary} />
+              </Pressable>
+            )}
             <Text
               style={[theme.typography.h1, { color: theme.colors.textPrimary }]}
             >

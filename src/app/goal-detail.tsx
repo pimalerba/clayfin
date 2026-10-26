@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -27,6 +28,8 @@ import {
   useDeleteGoalContribution,
   useGoalContributions,
   useGoalDetail,
+  useLiquidGlass,
+  useWindowClass,
 } from '@/hooks';
 import {
   ClayButton,
@@ -36,6 +39,8 @@ import {
   ClayLoadingState,
   ClayModal,
   ClayProgressBar,
+  GlassContainer,
+  GlassSurface,
 } from '@/components/ui';
 import {
   ContributionFormData,
@@ -43,11 +48,17 @@ import {
 } from '@/features/schemas';
 import { formatCentsToBRL } from '@/utils/currency';
 import { formatDateShortPtBR, getTodayISO } from '@/utils/date';
+import {
+  hapticGoalCompleted,
+  hapticTransactionSaved,
+} from '@/utils/haptics';
 import { calculateGoalProgress } from '@/utils/progress';
 import { DynamicIcon } from '@/utils/icons';
 
 export default function GoalDetailScreen() {
   const theme = useAppTheme();
+  const isLiquidGlass = useLiquidGlass();
+  const { maxContentWidth } = useWindowClass();
   const params = useLocalSearchParams<{ id: string }>();
   const goalId = params.id;
 
@@ -120,12 +131,23 @@ export default function GoalDetailScreen() {
     try {
       const signedAmount =
         values.mode === 'deposit' ? values.amount_cents : -values.amount_cents;
+      const willCompleteGoal =
+        values.mode === 'deposit' &&
+        goal.target_cents > 0 &&
+        goal.current_cents + values.amount_cents >= goal.target_cents;
 
       await addContributionMutation.mutateAsync({
         goal_id: goal.id,
         amount_cents: signedAmount,
         date: values.date,
       });
+
+      if (willCompleteGoal) {
+        hapticGoalCompleted();
+      } else {
+        hapticTransactionSaved();
+      }
+
       setModalVisible(false);
     } catch (err: any) {
       Alert.alert(
@@ -151,42 +173,102 @@ export default function GoalDetailScreen() {
 
   return (
     <SafeAreaView
+      edges={
+        Platform.OS === 'ios'
+          ? ['top', 'bottom', 'left', 'right']
+          : ['top', 'bottom']
+      }
       style={[styles.safe, { backgroundColor: theme.colors.background }]}
     >
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
-          style={[styles.iconBtn, { backgroundColor: theme.colors.surface }]}
-        >
-          <ArrowLeft size={22} color={theme.colors.textPrimary} />
-        </Pressable>
+      {isLiquidGlass ? (
+        <GlassContainer spacing={12} style={styles.header}>
+          <Pressable
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar"
+          >
+            <GlassSurface
+              interactive
+              tintColor="rgba(122, 90, 248, 0.16)"
+              borderRadius={22}
+              style={styles.iconBtn}
+            >
+              <ArrowLeft size={22} color="#1E1633" strokeWidth={2.4} />
+            </GlassSurface>
+          </Pressable>
 
-        <Text
-          numberOfLines={1}
-          style={[
-            theme.typography.h2,
-            { color: theme.colors.textPrimary, flex: 1, textAlign: 'center' },
-          ]}
-        >
-          {goal.name}
-        </Text>
+          <Text
+            numberOfLines={1}
+            style={[
+              theme.typography.h2,
+              { color: '#1E1633', flex: 1, textAlign: 'center' },
+            ]}
+          >
+            {goal.name}
+          </Text>
 
-        <Pressable
-          onPress={() =>
-            router.push({ pathname: '/goal-form', params: { id: goal.id } })
-          }
-          accessibilityRole="button"
-          accessibilityLabel="Editar meta"
-          style={[styles.iconBtn, { backgroundColor: theme.colors.surface }]}
-        >
-          <Edit3 size={20} color={theme.colors.textPrimary} />
-        </Pressable>
-      </View>
+          <Pressable
+            onPress={() =>
+              router.push({ pathname: '/goal-form', params: { id: goal.id } })
+            }
+            accessibilityRole="button"
+            accessibilityLabel="Editar meta"
+          >
+            <GlassSurface
+              interactive
+              tintColor="rgba(122, 90, 248, 0.16)"
+              borderRadius={22}
+              style={styles.iconBtn}
+            >
+              <Edit3 size={20} color="#1E1633" strokeWidth={2.4} />
+            </GlassSurface>
+          </Pressable>
+        </GlassContainer>
+      ) : (
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar"
+            style={[styles.iconBtn, { backgroundColor: theme.colors.surface }]}
+          >
+            <ArrowLeft size={22} color={theme.colors.textPrimary} />
+          </Pressable>
+
+          <Text
+            numberOfLines={1}
+            style={[
+              theme.typography.h2,
+              { color: theme.colors.textPrimary, flex: 1, textAlign: 'center' },
+            ]}
+          >
+            {goal.name}
+          </Text>
+
+          <Pressable
+            onPress={() =>
+              router.push({ pathname: '/goal-form', params: { id: goal.id } })
+            }
+            accessibilityRole="button"
+            accessibilityLabel="Editar meta"
+            style={[styles.iconBtn, { backgroundColor: theme.colors.surface }]}
+          >
+            <Edit3 size={20} color={theme.colors.textPrimary} />
+          </Pressable>
+        </View>
+      )}
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          maxContentWidth
+            ? {
+                maxWidth: maxContentWidth,
+                width: '100%',
+                alignSelf: 'center',
+              }
+            : null,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <ClayCard variant="primary" radius="xxl" style={styles.heroCard}>

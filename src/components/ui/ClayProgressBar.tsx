@@ -6,6 +6,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
+import { useAccessibilityPreferences } from '@/hooks/useAccessibilityPreferences';
 import { useAppTheme } from '@/theme';
 import { BudgetAlertLevel } from '@/utils/progress';
 
@@ -27,15 +28,20 @@ export function ClayProgressBar({
   accessibilityLabel,
 }: ClayProgressBarProps) {
   const theme = useAppTheme();
+  const { reduceMotion } = useAccessibilityPreferences();
   const clamped = Math.min(100, Math.max(0, percentage));
   const widthProgress = useSharedValue(clamped);
 
   useEffect(() => {
-    widthProgress.value = withSpring(clamped, {
-      damping: 18,
-      stiffness: 160,
-    });
-  }, [clamped, widthProgress]);
+    if (reduceMotion) {
+      widthProgress.value = clamped;
+    } else {
+      widthProgress.value = withSpring(clamped, {
+        damping: 18,
+        stiffness: 160,
+      });
+    }
+  }, [clamped, reduceMotion, widthProgress]);
 
   const fillStyle = useAnimatedStyle(() => ({
     width: `${widthProgress.value}%`,
