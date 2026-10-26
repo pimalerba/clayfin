@@ -5,9 +5,7 @@ import {
   Home,
   ArrowLeftRight,
   PieChart,
-  PiggyBank,
-  BarChart3,
-  Settings,
+  MoreHorizontal,
 } from 'lucide-react-native';
 import Animated, {
   useAnimatedStyle,
@@ -79,13 +77,11 @@ function ClayTabItem({
         return <ArrowLeftRight size={iconSize} color={iconColor} strokeWidth={2.4} />;
       case 'budgets':
         return <PieChart size={iconSize} color={iconColor} strokeWidth={2.4} />;
-      case 'goals':
-        return <PiggyBank size={iconSize} color={iconColor} strokeWidth={2.4} />;
-      case 'reports':
-        return <BarChart3 size={iconSize} color={iconColor} strokeWidth={2.4} />;
-      case 'settings':
+      case 'more':
       default:
-        return <Settings size={iconSize} color={iconColor} strokeWidth={2.4} />;
+        return (
+          <MoreHorizontal size={iconSize} color={iconColor} strokeWidth={2.4} />
+        );
     }
   };
 
@@ -150,6 +146,8 @@ export function ClayTabBar({
 }: ClayTabBarProps) {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
+  const visibleRouteNames = new Set(['index', 'transactions', 'budgets', 'more']);
+  const activeRouteName = state.routes[state.index]?.name;
 
   return (
     <View
@@ -175,53 +173,62 @@ export function ClayTabBar({
           },
         ]}
       >
-        {state.routes.map((route, index) => {
-          const { options } = descriptors[route.key];
-          const label =
-            options.tabBarLabel !== undefined
-              ? String(options.tabBarLabel)
-              : options.title !== undefined
-              ? options.title
-              : route.name;
+        {state.routes
+          .filter((route) => visibleRouteNames.has(route.name))
+          .map((route) => {
+            const { options } = descriptors[route.key];
+            const label =
+              options.tabBarLabel !== undefined
+                ? String(options.tabBarLabel)
+                : options.title !== undefined
+                ? options.title
+                : route.name;
 
-          const isFocused = state.index === index;
+            const isSubScreenOfMore =
+              activeRouteName === 'goals' ||
+              activeRouteName === 'reports' ||
+              activeRouteName === 'settings';
 
-          const onPress = () => {
-            const eventEmitter = navigation ?? emitter;
-            const event = eventEmitter?.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
+            const isFocused =
+              activeRouteName === route.name ||
+              (route.name === 'more' && isSubScreenOfMore);
 
-            if (!isFocused && !event?.defaultPrevented) {
-              if (navigateToTab) {
-                navigateToTab(route.key);
-              } else {
-                navigation?.navigate(route.name, route.params);
+            const onPress = () => {
+              const eventEmitter = navigation ?? emitter;
+              const event = eventEmitter?.emit({
+                type: 'tabPress',
+                target: route.key,
+                canPreventDefault: true,
+              });
+
+              if (activeRouteName !== route.name && !event?.defaultPrevented) {
+                if (navigateToTab) {
+                  navigateToTab(route.key);
+                } else {
+                  navigation?.navigate(route.name, route.params);
+                }
               }
-            }
-          };
+            };
 
-          const onLongPress = () => {
-            const eventEmitter = navigation ?? emitter;
-            eventEmitter?.emit({
-              type: 'tabLongPress',
-              target: route.key,
-            });
-          };
+            const onLongPress = () => {
+              const eventEmitter = navigation ?? emitter;
+              eventEmitter?.emit({
+                type: 'tabLongPress',
+                target: route.key,
+              });
+            };
 
-          return (
-            <ClayTabItem
-              key={route.key}
-              label={label}
-              routeName={route.name}
-              isFocused={isFocused}
-              onPress={onPress}
-              onLongPress={onLongPress}
-            />
-          );
-        })}
+            return (
+              <ClayTabItem
+                key={route.key}
+                label={label}
+                routeName={route.name}
+                isFocused={isFocused}
+                onPress={onPress}
+                onLongPress={onLongPress}
+              />
+            );
+          })}
       </View>
     </View>
   );

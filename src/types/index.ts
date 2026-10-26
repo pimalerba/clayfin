@@ -66,7 +66,10 @@ export interface MonthlySummaryReport {
   month: string;
   total_income_cents: number;
   total_expense_cents: number;
+  net_goal_contributions_cents: number;
   balance_cents: number;
+  available_account_cents: number;
+  total_saved_in_goals_cents: number;
   top_expense_category: {
     category_id: string;
     category_name: string;

@@ -12,11 +12,39 @@ import {
 
 export interface IReportRepository {
   getMonthlySummary(month: string): Promise<MonthlySummaryReport>;
+  getAvailableAccountBalance(): Promise<number>;
   getExpensesByCategory(month: string): Promise<CategoryExpenseSlice[]>;
   getLastSixMonthsCashflow(endMonth: string): Promise<MonthlyCashflowPoint[]>;
 }
 
 export const ReportRepository: IReportRepository = {
+  async getAvailableAccountBalance(): Promise<number> {
+    const db = await getDatabase();
+    const txTotals = await db.getAllAsync<{
+      type: 'income' | 'expense';
+      total_cents: number;
+    }>(
+      `SELECT type, COALESCE(SUM(amount_cents), 0) AS total_cents
+       FROM transactions
+       GROUP BY type;`
+    );
+
+    let allIncome = 0;
+    let allExpense = 0;
+    for (const row of txTotals) {
+      if (row.type === 'income') allIncome = row.total_cents;
+      if (row.type === 'expense') allExpense = row.total_cents;
+    }
+
+    const goalRow = await db.getFirstAsync<{ net_saved_cents: number }>(
+      `SELECT COALESCE(SUM(amount_cents), 0) AS net_saved_cents
+       FROM goal_contributions;`
+    );
+    const allSavedInGoals = goalRow?.net_saved_cents ?? 0;
+
+    return allIncome - allExpense - allSavedInGoals;
+  },
+
   async getMonthlySummary(month: string): Promise<MonthlySummaryReport> {
     const db = await getDatabase();
     const { startDate, endDate } = getMonthDateRange(month);
@@ -39,6 +67,22 @@ export const ReportRepository: IReportRepository = {
       if (row.type === 'income') totalIncome = row.total_cents;
       if (row.type === 'expense') totalExpense = row.total_cents;
     }
+
+    const monthGoalRow = await db.getFirstAsync<{ net_cents: number }>(
+      `SELECT COALESCE(SUM(amount_cents), 0) AS net_cents
+       FROM goal_contributions
+       WHERE date >= ? AND date <= ?;`,
+      [startDate, endDate]
+    );
+    const netGoalMonthCents = monthGoalRow?.net_cents ?? 0;
+
+    const allSavedRow = await db.getFirstAsync<{ total_saved_cents: number }>(
+      `SELECT COALESCE(SUM(amount_cents), 0) AS total_saved_cents
+       FROM goal_contributions;`
+    );
+    const totalSavedInGoalsCents = allSavedRow?.total_saved_cents ?? 0;
+
+    const availableAccountCents = await this.getAvailableAccountBalance();
 
     const topCategoryRow = await db.getFirstAsync<{
       category_id: string;
@@ -66,7 +110,10 @@ export const ReportRepository: IReportRepository = {
       month,
       total_income_cents: totalIncome,
       total_expense_cents: totalExpense,
-      balance_cents: totalIncome - totalExpense,
+      net_goal_contributions_cents: netGoalMonthCents,
+      balance_cents: totalIncome - totalExpense - netGoalMonthCents,
+      available_account_cents: availableAccountCents,
+      total_saved_in_goals_cents: totalSavedInGoalsCents,
       top_expense_category:
         topCategoryRow && topCategoryRow.total_cents > 0 ? topCategoryRow : null,
     };

@@ -1,10 +1,10 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Calendar, PiggyBank, Plus, Sparkles } from 'lucide-react-native';
+import { ArrowLeft, Calendar, PiggyBank, Plus, Sparkles } from 'lucide-react-native';
 import { useAppTheme } from '@/theme';
-import { useGoals } from '@/hooks';
+import { useAvailableAccountBalance, useGoals } from '@/hooks';
 import {
   ClayButton,
   ClayCard,
@@ -20,6 +20,7 @@ import { DynamicIcon } from '@/utils/icons';
 export default function GoalsScreen() {
   const theme = useAppTheme();
   const { data: goals = [], isLoading } = useGoals();
+  const { data: availableAccountCents = 0 } = useAvailableAccountBalance();
 
   const totalSavedCents = goals.reduce(
     (acc, g) => acc + Math.max(0, g.current_cents),
@@ -37,11 +38,24 @@ export default function GoalsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <Text
-            style={[theme.typography.h1, { color: theme.colors.textPrimary }]}
-          >
-            Metas & Cofrinhos
-          </Text>
+          <View style={styles.titleRow}>
+            <Pressable
+              onPress={() => router.push('/(tabs)/more')}
+              accessibilityRole="button"
+              accessibilityLabel="Voltar para Mais"
+              style={[
+                styles.backBtn,
+                { backgroundColor: theme.colors.surface },
+              ]}
+            >
+              <ArrowLeft size={20} color={theme.colors.textPrimary} />
+            </Pressable>
+            <Text
+              style={[theme.typography.h1, { color: theme.colors.textPrimary }]}
+            >
+              Metas & Cofrinhos
+            </Text>
+          </View>
           <ClayButton
             title="Nova Meta"
             size="sm"
@@ -50,38 +64,38 @@ export default function GoalsScreen() {
           />
         </View>
 
-        {goals.length > 0 ? (
-          <ClayCard variant="primary" radius="xl" style={styles.summaryCard}>
-            <View style={styles.summaryRow}>
-              <View>
-                <Text
-                  style={[theme.typography.bodySmall, { color: '#EDE7FF' }]}
-                >
-                  Total Guardado nos Cofrinhos
-                </Text>
-                <Text
-                  style={[
-                    theme.typography.hero,
-                    { color: '#FFFFFF', marginTop: 2 },
-                  ]}
-                >
-                  {formatCentsToBRL(totalSavedCents)}
-                </Text>
-                <Text
-                  style={[
-                    theme.typography.caption,
-                    { color: '#E2D9FF', marginTop: 4 },
-                  ]}
-                >
-                  Soma das metas: {formatCentsToBRL(totalTargetCents)}
-                </Text>
-              </View>
-              <View style={styles.piggyBadge}>
-                <PiggyBank size={30} color="#FFFFFF" />
-              </View>
+        <ClayCard variant="primary" radius="xl" style={styles.summaryCard}>
+          <View style={styles.summaryRow}>
+            <View>
+              <Text
+                style={[theme.typography.bodySmall, { color: '#EDE7FF' }]}
+              >
+                Total Guardado nos Cofrinhos
+              </Text>
+              <Text
+                style={[
+                  theme.typography.hero,
+                  { color: '#FFFFFF', marginTop: 2 },
+                ]}
+              >
+                {formatCentsToBRL(totalSavedCents)}
+              </Text>
+              <Text
+                style={[
+                  theme.typography.caption,
+                  { color: '#E2D9FF', marginTop: 4 },
+                ]}
+              >
+                Disponível em conta para guardar:{' '}
+                {formatCentsToBRL(Math.max(0, availableAccountCents))} • Soma das
+                metas: {formatCentsToBRL(totalTargetCents)}
+              </Text>
             </View>
-          </ClayCard>
-        ) : null}
+            <View style={styles.piggyBadge}>
+              <PiggyBank size={30} color="#FFFFFF" />
+            </View>
+          </View>
+        </ClayCard>
 
         {isLoading ? (
           <ClayLoadingState message="Carregando cofrinhos..." />
@@ -266,6 +280,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 8,
     marginBottom: 14,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   summaryCard: {
     marginBottom: 18,

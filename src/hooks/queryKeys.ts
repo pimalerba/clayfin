@@ -20,6 +20,7 @@ export const queryKeys = {
   reports: {
     all: ['reports'] as const,
     summary: (month: string) => ['reports', 'summary', month] as const,
+    availableBalance: ['reports', 'availableBalance'] as const,
     expensesByCategory: (month: string) =>
       ['reports', 'expensesByCategory', month] as const,
     cashflow: (endMonth: string) => ['reports', 'cashflow', endMonth] as const,

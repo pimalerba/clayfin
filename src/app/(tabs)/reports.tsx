@@ -1,12 +1,15 @@
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BarChart, PieChart } from 'react-native-gifted-charts';
 import {
   ArrowDownCircle,
+  ArrowLeft,
   ArrowUpCircle,
   BarChart3,
   Flame,
+  PiggyBank,
   Wallet,
 } from 'lucide-react-native';
 import { useAppTheme } from '@/theme';
@@ -79,6 +82,17 @@ export default function ReportsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
+          <Pressable
+            onPress={() => router.push('/(tabs)/more')}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar para Mais"
+            style={[
+              styles.backBtn,
+              { backgroundColor: theme.colors.surface },
+            ]}
+          >
+            <ArrowLeft size={20} color={theme.colors.textPrimary} />
+          </Pressable>
           <Text
             style={[theme.typography.h1, { color: theme.colors.textPrimary }]}
           >
@@ -104,7 +118,7 @@ export default function ReportsScreen() {
                     { color: '#E6DEFF', marginLeft: 8 },
                   ]}
                 >
-                  Saldo do Mês
+                  Saldo Disponível em Conta
                 </Text>
               </View>
               <Text
@@ -113,8 +127,25 @@ export default function ReportsScreen() {
                   { color: '#FFFFFF', marginTop: 4 },
                 ]}
               >
-                {formatCentsToBRL(summary.balance_cents)}
+                {formatCentsToBRL(summary.available_account_cents)}
               </Text>
+              <View style={styles.subBalanceRow}>
+                <Text style={[theme.typography.caption, { color: '#E6DEFF' }]}>
+                  Saldo líquido do mês: {formatCentsToBRL(summary.balance_cents)}
+                </Text>
+                <View style={styles.savedInline}>
+                  <PiggyBank size={13} color="#E6DEFF" />
+                  <Text
+                    style={[
+                      theme.typography.caption,
+                      { color: '#E6DEFF', marginLeft: 4 },
+                    ]}
+                  >
+                    Nos cofrinhos:{' '}
+                    {formatCentsToBRL(summary.total_saved_in_goals_cents)}
+                  </Text>
+                </View>
+              </View>
             </ClayCard>
 
             <View style={styles.gridRow}>
@@ -417,11 +448,33 @@ const styles = StyleSheet.create({
     paddingBottom: 110,
   },
   headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     marginTop: 8,
     marginBottom: 12,
   },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   balanceCard: {
     marginBottom: 12,
+  },
+  subBalanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  savedInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   balanceHeader: {
     flexDirection: 'row',

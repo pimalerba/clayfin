@@ -23,6 +23,7 @@ import {
 import { useAppTheme } from '@/theme';
 import {
   useAddGoalContribution,
+  useAvailableAccountBalance,
   useDeleteGoalContribution,
   useGoalContributions,
   useGoalDetail,
@@ -52,6 +53,7 @@ export default function GoalDetailScreen() {
 
   const { data: goal, isLoading } = useGoalDetail(goalId);
   const { data: contributions = [] } = useGoalContributions(goalId);
+  const { data: availableAccountCents = 0 } = useAvailableAccountBalance();
   const addContributionMutation = useAddGoalContribution();
   const deleteContributionMutation = useDeleteGoalContribution();
 
@@ -62,6 +64,7 @@ export default function GoalDetailScreen() {
     handleSubmit,
     watch,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ContributionFormData>({
     resolver: zodResolver(contributionFormSchema),
@@ -73,6 +76,8 @@ export default function GoalDetailScreen() {
   });
 
   const currentMode = watch('mode');
+  const safeAvailableInAccount = Math.max(0, availableAccountCents);
+  const safeAvailableInGoal = Math.max(0, goal?.current_cents ?? 0);
 
   const openContributionModal = (mode: 'deposit' | 'withdraw') => {
     reset({
@@ -87,27 +92,47 @@ export default function GoalDetailScreen() {
     if (!goal) return;
 
     if (
-      values.mode === 'withdraw' &&
-      values.amount_cents > Math.max(0, goal.current_cents)
+      values.mode === 'deposit' &&
+      values.amount_cents > safeAvailableInAccount
     ) {
       Alert.alert(
-        'Saldo insuficiente no cofrinho',
+        'Saldo insuficiente em conta',
         `Você possui ${formatCentsToBRL(
-          Math.max(0, goal.current_cents)
-        )} disponível para retirada.`
+          safeAvailableInAccount
+        )} em conta disponível para guardar no cofrinho.`
       );
       return;
     }
 
-    const signedAmount =
-      values.mode === 'deposit' ? values.amount_cents : -values.amount_cents;
+    if (
+      values.mode === 'withdraw' &&
+      values.amount_cents > safeAvailableInGoal
+    ) {
+      Alert.alert(
+        'Saldo insuficiente no cofrinho',
+        `Você possui ${formatCentsToBRL(
+          safeAvailableInGoal
+        )} investido neste cofrinho para retirar.`
+      );
+      return;
+    }
 
-    await addContributionMutation.mutateAsync({
-      goal_id: goal.id,
-      amount_cents: signedAmount,
-      date: values.date,
-    });
-    setModalVisible(false);
+    try {
+      const signedAmount =
+        values.mode === 'deposit' ? values.amount_cents : -values.amount_cents;
+
+      await addContributionMutation.mutateAsync({
+        goal_id: goal.id,
+        amount_cents: signedAmount,
+        date: values.date,
+      });
+      setModalVisible(false);
+    } catch (err: any) {
+      Alert.alert(
+        'Operação não permitida',
+        err?.message ?? 'Não foi possível realizar a movimentação.'
+      );
+    }
   };
 
   if (isLoading || !goal) {
@@ -341,8 +366,53 @@ export default function GoalDetailScreen() {
             ? 'Guardar no Cofrinho'
             : 'Retirar do Cofrinho'
         }
-        subtitle={goal.name}
+        subtitle={
+          currentMode === 'deposit'
+            ? `Disponível em conta: ${formatCentsToBRL(safeAvailableInAccount)}`
+            : `Investido no cofrinho: ${formatCentsToBRL(safeAvailableInGoal)}`
+        }
       >
+        <View style={styles.maxHelperRow}>
+          <Text
+            style={[
+              theme.typography.caption,
+              { color: theme.colors.textSecondary },
+            ]}
+          >
+            {currentMode === 'deposit'
+              ? 'O valor sairá do seu saldo em conta.'
+              : 'O valor voltará para o seu saldo em conta.'}
+          </Text>
+          <Pressable
+            onPress={() =>
+              setValue(
+                'amount_cents',
+                currentMode === 'deposit'
+                  ? safeAvailableInAccount
+                  : safeAvailableInGoal,
+                { shouldValidate: true }
+              )
+            }
+            accessibilityRole="button"
+            accessibilityLabel="Usar valor máximo disponível"
+          >
+            <Text
+              style={[
+                theme.typography.caption,
+                { color: theme.colors.primary },
+              ]}
+            >
+              Usar máximo (
+              {formatCentsToBRL(
+                currentMode === 'deposit'
+                  ? safeAvailableInAccount
+                  : safeAvailableInGoal
+              )}
+              )
+            </Text>
+          </Pressable>
+        </View>
+
         <Controller
           control={control}
           name="amount_cents"
@@ -464,5 +534,12 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  maxHelperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    paddingHorizontal: 4,
   },
 });

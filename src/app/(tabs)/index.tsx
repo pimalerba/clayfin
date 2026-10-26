@@ -113,15 +113,29 @@ export default function HomeScreen() {
                   { color: '#E6DEFF', marginLeft: 8 },
                 ]}
               >
-                Saldo do Mês
+                Saldo Disponível em Conta
               </Text>
             </View>
+            {(summary?.total_saved_in_goals_cents ?? 0) > 0 ? (
+              <View style={styles.savedMiniTag}>
+                <PiggyBank size={13} color="#FFFFFF" />
+                <Text
+                  style={[
+                    theme.typography.caption,
+                    { color: '#FFFFFF', marginLeft: 4 },
+                  ]}
+                >
+                  Guardado:{' '}
+                  {formatCentsToBRL(summary?.total_saved_in_goals_cents ?? 0)}
+                </Text>
+              </View>
+            ) : null}
           </View>
 
           <Text
             style={[theme.typography.hero, { color: '#FFFFFF', marginTop: 4 }]}
           >
-            {formatCentsToBRL(summary?.balance_cents ?? 0)}
+            {formatCentsToBRL(summary?.available_account_cents ?? 0)}
           </Text>
 
           <View style={styles.quickActionRow}>
@@ -502,6 +516,14 @@ const styles = StyleSheet.create({
   walletLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  savedMiniTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   quickActionRow: {
     flexDirection: 'row',

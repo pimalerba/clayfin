@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Alert,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +14,7 @@ import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import {
+  ArrowLeft,
   Download,
   FolderKanban,
   Plus,
@@ -171,6 +173,17 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
+          <Pressable
+            onPress={() => router.push('/(tabs)/more')}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar para Mais"
+            style={[
+              styles.backBtn,
+              { backgroundColor: theme.colors.surface },
+            ]}
+          >
+            <ArrowLeft size={20} color={theme.colors.textPrimary} />
+          </Pressable>
           <Text
             style={[theme.typography.h1, { color: theme.colors.textPrimary }]}
           >
@@ -360,8 +373,18 @@ const styles = StyleSheet.create({
     paddingBottom: 110,
   },
   headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     marginTop: 8,
     marginBottom: 14,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   privacyBanner: {
     marginBottom: 16,

@@ -5,6 +5,7 @@ import {
 import {
   calculateBudgetProgress,
   calculateGoalProgress,
+  validateGoalTransfer,
 } from '@/utils/progress';
 import { validateBackupPayload } from '@/utils/backup';
 
@@ -66,6 +67,48 @@ describe('Cálculo de progresso de metas / cofrinhos', () => {
     expect(res.clampedPercentage).toBe(100);
     expect(res.remainingCents).toBe(0);
     expect(res.isCompleted).toBe(true);
+  });
+
+  it('permite guardar no cofrinho apenas até o saldo disponível em conta e desconta o valor', () => {
+    // Tem R$ 50,00 (5000 centavos) em conta e tenta adicionar R$ 100,00 (10000 centavos) -> bloqueado
+    const blocked = validateGoalTransfer({
+      mode: 'deposit',
+      amountCents: 10000,
+      availableAccountCents: 5000,
+      currentGoalCents: 0,
+    });
+    expect(blocked.allowed).toBe(false);
+
+    // Tem R$ 50,00 em conta e guarda R$ 40,00 -> sobra R$ 10,00 na conta e R$ 40,00 no cofrinho
+    const okDeposit = validateGoalTransfer({
+      mode: 'deposit',
+      amountCents: 4000,
+      availableAccountCents: 5000,
+      currentGoalCents: 0,
+    });
+    expect(okDeposit.allowed).toBe(true);
+    expect(okDeposit.newAccountBalanceCents).toBe(1000);
+    expect(okDeposit.newGoalBalanceCents).toBe(4000);
+  });
+
+  it('permite retirar do cofrinho apenas até o valor investido e devolve ao saldo em conta', () => {
+    const blockedWithdraw = validateGoalTransfer({
+      mode: 'withdraw',
+      amountCents: 5000,
+      availableAccountCents: 1000,
+      currentGoalCents: 4000,
+    });
+    expect(blockedWithdraw.allowed).toBe(false);
+
+    const okWithdraw = validateGoalTransfer({
+      mode: 'withdraw',
+      amountCents: 1500,
+      availableAccountCents: 1000,
+      currentGoalCents: 4000,
+    });
+    expect(okWithdraw.allowed).toBe(true);
+    expect(okWithdraw.newAccountBalanceCents).toBe(2500);
+    expect(okWithdraw.newGoalBalanceCents).toBe(2500);
   });
 });
 

@@ -9,6 +9,13 @@ export function useMonthlySummary(month: string) {
   });
 }
 
+export function useAvailableAccountBalance() {
+  return useQuery({
+    queryKey: queryKeys.reports.availableBalance,
+    queryFn: () => ReportRepository.getAvailableAccountBalance(),
+  });
+}
+
 export function useExpensesByCategory(month: string) {
   return useQuery({
     queryKey: queryKeys.reports.expensesByCategory(month),

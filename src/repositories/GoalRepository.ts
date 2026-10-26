@@ -1,6 +1,8 @@
 import { getDatabase } from '@/db';
 import { Goal, GoalContribution, GoalWithProgress } from '@/types';
+import { formatCentsToBRL } from '@/utils/currency';
 import { generateId } from '@/utils/uuid';
+import { ReportRepository } from './ReportRepository';
 
 export interface CreateGoalInput {
   name: string;
@@ -128,6 +130,28 @@ export const GoalRepository: IGoalRepository = {
 
     if (cents === 0) {
       throw new Error('O valor do aporte/retirada deve ser diferente de zero.');
+    }
+
+    if (cents > 0) {
+      const availableInAccount =
+        await ReportRepository.getAvailableAccountBalance();
+      if (cents > availableInAccount) {
+        throw new Error(
+          `Saldo insuficiente em conta. Você possui ${formatCentsToBRL(
+            Math.max(0, availableInAccount)
+          )} disponível para guardar.`
+        );
+      }
+    } else {
+      const goal = await this.getByIdWithProgress(input.goal_id);
+      const currentInGoal = Math.max(0, goal?.current_cents ?? 0);
+      if (Math.abs(cents) > currentInGoal) {
+        throw new Error(
+          `Valor acima do disponível no cofrinho (${formatCentsToBRL(
+            currentInGoal
+          )}).`
+        );
+      }
     }
 
     await db.runAsync(

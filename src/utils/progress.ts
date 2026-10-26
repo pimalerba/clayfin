@@ -97,3 +97,72 @@ export function calculateGoalProgress(
     isCompleted: safeCurrent >= safeTarget,
   };
 }
+
+export interface GoalTransferValidationResult {
+  allowed: boolean;
+  newAccountBalanceCents: number;
+  newGoalBalanceCents: number;
+  error?: string;
+}
+
+/**
+ * Valida a transferência entre o saldo disponível em conta e o cofrinho.
+ * - Deposit (guardar): exige valor <= availableAccountCents e reduz o saldo da conta.
+ * - Withdraw (retirar): exige valor <= currentGoalCents e devolve o valor para o saldo da conta.
+ */
+export function validateGoalTransfer({
+  mode,
+  amountCents,
+  availableAccountCents,
+  currentGoalCents,
+}: {
+  mode: 'deposit' | 'withdraw';
+  amountCents: number;
+  availableAccountCents: number;
+  currentGoalCents: number;
+}): GoalTransferValidationResult {
+  const safeAmount = Math.trunc(amountCents || 0);
+  const safeAccount = Math.max(0, Math.trunc(availableAccountCents || 0));
+  const safeGoal = Math.max(0, Math.trunc(currentGoalCents || 0));
+
+  if (safeAmount <= 0) {
+    return {
+      allowed: false,
+      newAccountBalanceCents: safeAccount,
+      newGoalBalanceCents: safeGoal,
+      error: 'Informe um valor maior que R$ 0,00.',
+    };
+  }
+
+  if (mode === 'deposit') {
+    if (safeAmount > safeAccount) {
+      return {
+        allowed: false,
+        newAccountBalanceCents: safeAccount,
+        newGoalBalanceCents: safeGoal,
+        error: 'Saldo insuficiente em conta para guardar este valor.',
+      };
+    }
+    return {
+      allowed: true,
+      newAccountBalanceCents: safeAccount - safeAmount,
+      newGoalBalanceCents: safeGoal + safeAmount,
+    };
+  }
+
+  if (safeAmount > safeGoal) {
+    return {
+      allowed: false,
+      newAccountBalanceCents: safeAccount,
+      newGoalBalanceCents: safeGoal,
+      error: 'Valor acima do saldo investido neste cofrinho.',
+    };
+  }
+
+  return {
+    allowed: true,
+    newAccountBalanceCents: safeAccount + safeAmount,
+    newGoalBalanceCents: safeGoal - safeAmount,
+  };
+}
+
