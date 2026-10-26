@@ -44,21 +44,18 @@ export default function TabsLayout() {
         name="goals"
         options={{
           title: 'Metas',
-          href: null,
         }}
       />
       <Tabs.Screen
         name="reports"
         options={{
           title: 'Relatórios',
-          href: null,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Ajustes',
-          href: null,
         }}
       />
     </Tabs>

@@ -201,7 +201,11 @@ export function ClayTabBar({
                 canPreventDefault: true,
               });
 
-              if (activeRouteName !== route.name && !event?.defaultPrevented) {
+              const shouldNavigate =
+                activeRouteName !== route.name ||
+                (route.name === 'more' && isSubScreenOfMore);
+
+              if (shouldNavigate && !event?.defaultPrevented) {
                 if (navigateToTab) {
                   navigateToTab(route.key);
                 } else {
