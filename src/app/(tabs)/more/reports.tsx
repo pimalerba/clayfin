@@ -113,7 +113,10 @@ export default function ReportsScreen() {
             </Text>
           </View>
           <Text
-            maxFontSizeMultiplier={1.3}
+            maxFontSizeMultiplier={2.0}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+            numberOfLines={1}
             style={[
               theme.typography.hero,
               { color: '#FFFFFF', marginTop: 4 },
@@ -154,7 +157,10 @@ export default function ReportsScreen() {
               </Text>
             </View>
             <Text
-              maxFontSizeMultiplier={1.3}
+              maxFontSizeMultiplier={2.0}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+            numberOfLines={1}
               style={[
                 theme.typography.h3,
                 {
@@ -181,7 +187,10 @@ export default function ReportsScreen() {
               </Text>
             </View>
             <Text
-              maxFontSizeMultiplier={1.3}
+              maxFontSizeMultiplier={2.0}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+            numberOfLines={1}
               style={[
                 theme.typography.h3,
                 {

@@ -92,7 +92,7 @@ export function ClayChip({
     >
       {icon ? <View style={styles.iconSlot}>{icon}</View> : null}
       <Text
-        maxFontSizeMultiplier={1.35}
+        maxFontSizeMultiplier={1.8}
         style={[
           theme.typography.bodySmall,
           {

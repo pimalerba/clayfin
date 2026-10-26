@@ -184,12 +184,18 @@ export default function BudgetsScreen() {
       </Text>
       <View style={styles.overviewAmounts}>
         <Text
-          maxFontSizeMultiplier={1.3}
+          maxFontSizeMultiplier={2.0}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+          numberOfLines={1}
           style={[theme.typography.h1, { color: '#FFFFFF' }]}
         >
           {formatCentsToBRL(totalSpentCents)}
         </Text>
-        <Text style={[theme.typography.body, { color: '#E2D9FF' }]}>
+        <Text
+          maxFontSizeMultiplier={2.0}
+          style={[theme.typography.body, { color: '#E2D9FF' }]}
+        >
           de {formatCentsToBRL(totalLimitCents)}
         </Text>
       </View>

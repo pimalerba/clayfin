@@ -20,6 +20,7 @@ import {
   useDeleteCategory,
   useLiquidGlass,
   useUpdateCategory,
+  useWindowClass,
 } from '@/hooks';
 import { CategoryRepository } from '@/repositories';
 import { DEFAULT_OUTROS_EXPENSE_ID } from '@/db/seed';
@@ -37,6 +38,7 @@ import { AVAILABLE_ICON_NAMES, DynamicIcon } from '@/utils/icons';
 export default function CategoryFormScreen() {
   const theme = useAppTheme();
   const isLiquidGlass = useLiquidGlass();
+  const { maxFormWidth } = useWindowClass();
   const params = useLocalSearchParams<{ id?: string }>();
   const isEditing = Boolean(params.id);
 
@@ -160,7 +162,11 @@ export default function CategoryFormScreen() {
 
   return (
     <SafeAreaView
-      edges={Platform.OS === 'ios' ? ['bottom'] : ['top', 'bottom']}
+      edges={
+        Platform.OS === 'ios'
+          ? ['bottom', 'left', 'right']
+          : ['top', 'bottom', 'left', 'right']
+      }
       style={[
         styles.safe,
         {
@@ -173,6 +179,9 @@ export default function CategoryFormScreen() {
       <View
         style={[
           styles.header,
+          maxFormWidth
+            ? { maxWidth: maxFormWidth, width: '100%', alignSelf: 'center' }
+            : null,
           Platform.OS === 'ios' ? { paddingTop: 18 } : null,
         ]}
       >
@@ -214,7 +223,12 @@ export default function CategoryFormScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          maxFormWidth
+            ? { maxWidth: maxFormWidth, width: '100%', alignSelf: 'center' }
+            : null,
+        ]}
         automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         keyboardShouldPersistTaps="handled"

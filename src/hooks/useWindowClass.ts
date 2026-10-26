@@ -18,6 +18,11 @@ export const WINDOW_CLASS_BREAKPOINTS = {
    */
   maxContentWidthRegular: 1040,
   /**
+   * Largura máxima para formulários e sheets modais em modo `regular`,
+   * garantindo campos e botões compactos e confortáveis no centro da tela.
+   */
+  maxFormWidthRegular: 560,
+  /**
    * Espaçamento horizontal padrão entre colunas no modo `regular`.
    */
   columnGapRegular: 18,
@@ -49,6 +54,7 @@ export interface WindowClassInfo {
   columns: 1 | 2;
   columnGap: number;
   maxContentWidth: number | undefined;
+  maxFormWidth: number | undefined;
   isForcedRegularDev: boolean;
 }
 
@@ -87,6 +93,9 @@ export function resolveWindowClass({
     columnGap: isRegular ? WINDOW_CLASS_BREAKPOINTS.columnGapRegular : 0,
     maxContentWidth: isRegular
       ? WINDOW_CLASS_BREAKPOINTS.maxContentWidthRegular
+      : undefined,
+    maxFormWidth: isRegular
+      ? WINDOW_CLASS_BREAKPOINTS.maxFormWidthRegular
       : undefined,
     isForcedRegularDev,
   };

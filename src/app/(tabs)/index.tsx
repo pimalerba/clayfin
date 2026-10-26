@@ -107,7 +107,13 @@ export default function HomeScreen() {
       </View>
 
       <Text
-        maxFontSizeMultiplier={1.3}
+        maxFontSizeMultiplier={2.0}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+        numberOfLines={1}
+        accessibilityLabel={`Saldo disponível em conta: ${formatCentsToBRL(
+          summary?.available_account_cents ?? 0
+        )}`}
         style={[theme.typography.hero, { color: '#FFFFFF', marginTop: 4 }]}
       >
         {formatCentsToBRL(summary?.available_account_cents ?? 0)}
@@ -131,7 +137,13 @@ export default function HomeScreen() {
               Receitas
             </Text>
             <Text
-              maxFontSizeMultiplier={1.3}
+              maxFontSizeMultiplier={2.0}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+        numberOfLines={1}
+        accessibilityLabel={`Saldo disponível em conta: ${formatCentsToBRL(
+          summary?.available_account_cents ?? 0
+        )}`}
               style={[
                 theme.typography.bodySmall,
                 {
@@ -162,7 +174,13 @@ export default function HomeScreen() {
               Despesas
             </Text>
             <Text
-              maxFontSizeMultiplier={1.3}
+              maxFontSizeMultiplier={2.0}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+        numberOfLines={1}
+        accessibilityLabel={`Saldo disponível em conta: ${formatCentsToBRL(
+          summary?.available_account_cents ?? 0
+        )}`}
               style={[
                 theme.typography.bodySmall,
                 {
@@ -555,6 +573,8 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
+    minWidth: 130,
+    minHeight: 48,
   },
   scrollContent: {
     paddingHorizontal: 18,
@@ -581,6 +601,8 @@ const styles = StyleSheet.create({
   },
   regularColumn: {
     flex: 1,
+    minWidth: 130,
+    minHeight: 48,
   },
   heroCard: {
     marginBottom: 20,
@@ -608,9 +630,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     marginTop: 18,
+    flexWrap: 'wrap',
   },
   quickPill: {
     flex: 1,
+    minWidth: 130,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.16)',
