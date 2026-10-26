@@ -25,6 +25,7 @@ import {
   ClayCard,
   ClayEmptyState,
   ClayProgressBar,
+  LiquidGlassDevPreview,
 } from '@/components/ui';
 import { MonthSelector } from '@/components/MonthSelector';
 import { TransactionRow } from '@/components/TransactionRow';
@@ -101,6 +102,8 @@ export default function HomeScreen() {
           selectedMonth={selectedMonth}
           onChangeMonth={setSelectedMonth}
         />
+
+        {__DEV__ ? <LiquidGlassDevPreview /> : null}
 
         {/* Card de Saldo Principal */}
         <ClayCard variant="primary" radius="xxl" style={styles.heroCard}>
