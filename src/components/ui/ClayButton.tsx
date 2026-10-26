@@ -147,7 +147,7 @@ export function ClayButton({
           <View style={styles.contentRow}>
             {icon ? <View style={styles.iconSlot}>{icon}</View> : null}
             <Text
-              maxFontSizeMultiplier={1.35}
+              maxFontSizeMultiplier={2.0}
               style={[
                 theme.typography.button,
                 size === 'sm' && { fontSize: 14 },

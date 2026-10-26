@@ -238,7 +238,12 @@ export default function TransactionsScreen() {
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            isRegular
+              ? { paddingBottom: Math.max(insets.bottom + 40, 60) }
+              : null,
+          ]}
           renderSectionHeader={({ section }) => (
             <View style={styles.sectionHeader}>
               <Text
@@ -341,7 +346,10 @@ export default function TransactionsScreen() {
                   </Text>
                 </View>
                 <Text
-                  maxFontSizeMultiplier={1.3}
+                  maxFontSizeMultiplier={2.0}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
+                  numberOfLines={1}
                   style={[
                     theme.typography.h1,
                     { color: '#FFFFFF', marginTop: 6 },
@@ -435,7 +443,12 @@ export default function TransactionsScreen() {
             spacing={12}
             style={[
               styles.fabPosition,
-              { bottom: Math.max(insets.bottom + 64, 90) },
+              {
+                right: Math.max(insets.right + 22, 22),
+                bottom: isRegular
+                  ? Math.max(insets.bottom + 22, 34)
+                  : Math.max(insets.bottom + 64, 90),
+              },
             ]}
           >
             <Pressable
@@ -463,9 +476,17 @@ export default function TransactionsScreen() {
               theme.shadows.lg,
               {
                 backgroundColor: theme.colors.primary,
+                right:
+                  Platform.OS === 'ios'
+                    ? Math.max(insets.right + 22, 22)
+                    : 22,
                 borderRadius: theme.radii.pill,
                 bottom:
-                  Platform.OS === 'ios' ? Math.max(insets.bottom + 64, 90) : 22,
+                  Platform.OS === 'ios'
+                    ? isRegular
+                      ? Math.max(insets.bottom + 22, 34)
+                      : Math.max(insets.bottom + 64, 90)
+                    : 22,
               },
             ]}
           >

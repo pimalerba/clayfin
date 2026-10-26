@@ -58,7 +58,10 @@ export function MonthSelector({
               accessibilityLabel={`Mês selecionado: ${formatMonthYearPtBR(
                 selectedMonth
               )}`}
-              maxFontSizeMultiplier={1.35}
+              maxFontSizeMultiplier={2.0}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+              numberOfLines={1}
               style={[
                 theme.typography.h3,
                 styles.highContrastText,
@@ -118,7 +121,10 @@ export function MonthSelector({
             accessibilityLabel={`Mês selecionado: ${formatMonthYearPtBR(
               selectedMonth
             )}`}
-            maxFontSizeMultiplier={1.35}
+            maxFontSizeMultiplier={2.0}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+            numberOfLines={1}
             style={[
               theme.typography.h3,
               { color: theme.colors.textPrimary, flexShrink: 1 },

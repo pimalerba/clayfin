@@ -93,14 +93,14 @@ export function TransactionRow({
         <View style={styles.infoCol}>
           <Text
             numberOfLines={1}
-            maxFontSizeMultiplier={1.35}
+            maxFontSizeMultiplier={1.8}
             style={[theme.typography.h3, { color: theme.colors.textPrimary }]}
           >
             {transaction.description || transaction.category_name}
           </Text>
           <Text
             numberOfLines={1}
-            maxFontSizeMultiplier={1.35}
+            maxFontSizeMultiplier={1.8}
             style={[
               theme.typography.bodySmall,
               { color: theme.colors.textSecondary },
@@ -111,7 +111,10 @@ export function TransactionRow({
         </View>
 
         <Text
-          maxFontSizeMultiplier={1.35}
+          maxFontSizeMultiplier={2.0}
+          adjustsFontSizeToFit
+          minimumFontScale={0.75}
+          numberOfLines={1}
           style={[
             theme.typography.h3,
             styles.amount,

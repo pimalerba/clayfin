@@ -31,6 +31,7 @@ describe('useWindowClass / resolveWindowClass (iOS 27 & iPhone Duo)', () => {
     expect(res.columns).toBe(1);
     expect(res.columnGap).toBe(0);
     expect(res.maxContentWidth).toBeUndefined();
+    expect(res.maxFormWidth).toBeUndefined();
     expect(res.isForcedRegularDev).toBe(false);
   });
 
@@ -49,6 +50,9 @@ describe('useWindowClass / resolveWindowClass (iOS 27 & iPhone Duo)', () => {
     expect(atBreakpoint.maxContentWidth).toBe(
       WINDOW_CLASS_BREAKPOINTS.maxContentWidthRegular
     );
+    expect(atBreakpoint.maxFormWidth).toBe(
+      WINDOW_CLASS_BREAKPOINTS.maxFormWidthRegular
+    );
 
     // Mesmo com height > width (retrato na tela interna do Duo), reage à largura da janela e não à orientação
     const duoPortraitUnfolded = resolveWindowClass({
@@ -59,6 +63,9 @@ describe('useWindowClass / resolveWindowClass (iOS 27 & iPhone Duo)', () => {
     expect(duoPortraitUnfolded.sizeClass).toBe('regular');
     expect(duoPortraitUnfolded.isRegular).toBe(true);
     expect(duoPortraitUnfolded.columns).toBe(2);
+    expect(duoPortraitUnfolded.maxFormWidth).toBe(
+      WINDOW_CLASS_BREAKPOINTS.maxFormWidthRegular
+    );
   });
 
   it('mantém Android e Web sempre em compact, mesmo em janelas largas ou com flag de dev', () => {
@@ -73,6 +80,7 @@ describe('useWindowClass / resolveWindowClass (iOS 27 & iPhone Duo)', () => {
     expect(androidWide.isRegular).toBe(false);
     expect(androidWide.columns).toBe(1);
     expect(androidWide.maxContentWidth).toBeUndefined();
+    expect(androidWide.maxFormWidth).toBeUndefined();
 
     const webWide = resolveWindowClass({
       width: 1280,
@@ -98,6 +106,9 @@ describe('useWindowClass / resolveWindowClass (iOS 27 & iPhone Duo)', () => {
     expect(forcedInDev.isRegular).toBe(true);
     expect(forcedInDev.isForcedRegularDev).toBe(true);
     expect(forcedInDev.columns).toBe(2);
+    expect(forcedInDev.maxFormWidth).toBe(
+      WINDOW_CLASS_BREAKPOINTS.maxFormWidthRegular
+    );
 
     // Em produção (isDev=false), a flag forceRegularInDev é ignorada
     const ignoredInProd = resolveWindowClass({
