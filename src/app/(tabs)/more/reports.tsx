@@ -1,5 +1,12 @@
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BarChart, PieChart } from 'react-native-gifted-charts';
@@ -14,10 +21,12 @@ import {
 } from 'lucide-react-native';
 import { useAppTheme } from '@/theme';
 import {
+  useAccessibilityPreferences,
   useExpensesByCategory,
   useLastSixMonthsCashflow,
   useLiquidGlass,
   useMonthlySummary,
+  useWindowClass,
 } from '@/hooks';
 import { useUIStore } from '@/store/useUIStore';
 import {
@@ -34,6 +43,8 @@ import { DynamicIcon } from '@/utils/icons';
 export default function ReportsScreen() {
   const theme = useAppTheme();
   const isLiquidGlass = useLiquidGlass();
+  const { reduceMotion } = useAccessibilityPreferences();
+  const { isRegular, maxContentWidth, columnGap } = useWindowClass();
   const { selectedMonth, setSelectedMonth } = useUIStore();
 
   const handleBack = () => {
@@ -84,387 +95,418 @@ export default function ReportsScreen() {
     return items;
   }, [cashflow, theme]);
 
+  const summaryColumnContent =
+    loadingSummary || !summary ? (
+      <ClayLoadingState message="Calculando resumo mensal..." />
+    ) : (
+      <>
+        <ClayCard variant="primary" radius="xl" style={styles.balanceCard}>
+          <View style={styles.balanceHeader}>
+            <Wallet size={20} color="#E6DEFF" />
+            <Text
+              style={[
+                theme.typography.bodySmall,
+                { color: '#E6DEFF', marginLeft: 8 },
+              ]}
+            >
+              Saldo Disponível em Conta
+            </Text>
+          </View>
+          <Text
+            maxFontSizeMultiplier={1.3}
+            style={[
+              theme.typography.hero,
+              { color: '#FFFFFF', marginTop: 4 },
+            ]}
+          >
+            {formatCentsToBRL(summary.available_account_cents)}
+          </Text>
+          <View style={styles.subBalanceRow}>
+            <Text style={[theme.typography.caption, { color: '#E6DEFF' }]}>
+              Saldo líquido do mês: {formatCentsToBRL(summary.balance_cents)}
+            </Text>
+            <View style={styles.savedInline}>
+              <PiggyBank size={13} color="#E6DEFF" />
+              <Text
+                style={[
+                  theme.typography.caption,
+                  { color: '#E6DEFF', marginLeft: 4 },
+                ]}
+              >
+                Nos cofrinhos:{' '}
+                {formatCentsToBRL(summary.total_saved_in_goals_cents)}
+              </Text>
+            </View>
+          </View>
+        </ClayCard>
+
+        <View style={styles.gridRow}>
+          <ClayCard variant="income" radius="xl" style={styles.halfCard}>
+            <View style={styles.miniHeader}>
+              <ArrowUpCircle size={18} color={theme.colors.incomeDark} />
+              <Text
+                style={[
+                  theme.typography.caption,
+                  { color: theme.colors.incomeDark, marginLeft: 6 },
+                ]}
+              >
+                Receitas
+              </Text>
+            </View>
+            <Text
+              maxFontSizeMultiplier={1.3}
+              style={[
+                theme.typography.h3,
+                {
+                  color: theme.colors.incomeDark,
+                  fontFamily: theme.fontFamilies.extraBold,
+                  marginTop: 6,
+                },
+              ]}
+            >
+              {formatCentsToBRL(summary.total_income_cents)}
+            </Text>
+          </ClayCard>
+
+          <ClayCard variant="expense" radius="xl" style={styles.halfCard}>
+            <View style={styles.miniHeader}>
+              <ArrowDownCircle size={18} color={theme.colors.expenseDark} />
+              <Text
+                style={[
+                  theme.typography.caption,
+                  { color: theme.colors.expenseDark, marginLeft: 6 },
+                ]}
+              >
+                Despesas
+              </Text>
+            </View>
+            <Text
+              maxFontSizeMultiplier={1.3}
+              style={[
+                theme.typography.h3,
+                {
+                  color: theme.colors.expenseDark,
+                  fontFamily: theme.fontFamilies.extraBold,
+                  marginTop: 6,
+                },
+              ]}
+            >
+              {formatCentsToBRL(summary.total_expense_cents)}
+            </Text>
+          </ClayCard>
+        </View>
+
+        {summary.top_expense_category ? (
+          <ClayCard radius="xl" style={styles.topCatCard}>
+            <View style={styles.topCatRow}>
+              <View
+                style={[
+                  styles.topCatIcon,
+                  {
+                    backgroundColor: `${summary.top_expense_category.category_color}24`,
+                  },
+                ]}
+              >
+                <Flame
+                  size={22}
+                  color={summary.top_expense_category.category_color}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={[
+                    theme.typography.caption,
+                    { color: theme.colors.textSecondary },
+                  ]}
+                >
+                  Maior Categoria de Gasto
+                </Text>
+                <Text
+                  style={[
+                    theme.typography.h3,
+                    { color: theme.colors.textPrimary },
+                  ]}
+                >
+                  {summary.top_expense_category.category_name}
+                </Text>
+              </View>
+              <Text
+                style={[
+                  theme.typography.h3,
+                  {
+                    color: theme.colors.expenseDark,
+                    fontFamily: theme.fontFamilies.extraBold,
+                  },
+                ]}
+              >
+                {formatCentsToBRL(summary.top_expense_category.total_cents)}
+              </Text>
+            </View>
+          </ClayCard>
+        ) : null}
+      </>
+    );
+
+  const pieChartCardContent = (
+    <ClayCard radius="xl" style={styles.chartCard}>
+      <Text
+        accessibilityRole="header"
+        style={[
+          theme.typography.h3,
+          { color: theme.colors.textPrimary, marginBottom: 14 },
+        ]}
+      >
+        Despesas por Categoria
+      </Text>
+
+      {loadingSlices ? (
+        <ClayLoadingState />
+      ) : categorySlices.length === 0 ? (
+        <ClayEmptyState
+          icon={<BarChart3 size={24} color={theme.colors.primary} />}
+          title="Sem despesas no mês"
+          description="Registre despesas para visualizar a distribuição por categoria."
+        />
+      ) : (
+        <>
+          <View style={styles.donutWrapper}>
+            <PieChart
+              donut
+              radius={92}
+              innerRadius={58}
+              innerCircleColor={theme.colors.surface}
+              data={pieData}
+              centerLabelComponent={() => (
+                <View style={styles.donutCenter}>
+                  <Text
+                    style={[
+                      theme.typography.caption,
+                      { color: theme.colors.textSecondary },
+                    ]}
+                  >
+                    Total
+                  </Text>
+                  <Text
+                    style={[
+                      theme.typography.bodySmall,
+                      {
+                        color: theme.colors.textPrimary,
+                        fontFamily: theme.fontFamilies.extraBold,
+                      },
+                    ]}
+                  >
+                    {formatCentsToBRL(summary?.total_expense_cents ?? 0)}
+                  </Text>
+                </View>
+              )}
+            />
+          </View>
+
+          <View style={styles.legendList}>
+            {categorySlices.map((slice) => (
+              <View key={slice.category_id} style={styles.legendRow}>
+                <View style={styles.legendLeft}>
+                  <View
+                    style={[
+                      styles.legendDot,
+                      { backgroundColor: slice.category_color },
+                    ]}
+                  />
+                  <DynamicIcon
+                    name={slice.category_icon}
+                    size={16}
+                    color={slice.category_color}
+                  />
+                  <Text
+                    style={[
+                      theme.typography.body,
+                      {
+                        color: theme.colors.textPrimary,
+                        marginLeft: 8,
+                        flexShrink: 1,
+                      },
+                    ]}
+                  >
+                    {slice.category_name}
+                  </Text>
+                </View>
+                <View style={styles.legendRight}>
+                  <Text
+                    style={[
+                      theme.typography.bodySmall,
+                      {
+                        color: theme.colors.textPrimary,
+                        fontFamily: theme.fontFamilies.bold,
+                      },
+                    ]}
+                  >
+                    {formatCentsToBRL(slice.total_cents)}
+                  </Text>
+                  <Text
+                    style={[
+                      theme.typography.caption,
+                      {
+                        color: theme.colors.textSecondary,
+                        marginLeft: 8,
+                        minWidth: 42,
+                        textAlign: 'right',
+                      },
+                    ]}
+                  >
+                    {slice.percentage}%
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
+    </ClayCard>
+  );
+
   return (
     <SafeAreaView
-      edges={['top']}
+      edges={Platform.OS === 'ios' ? ['top', 'left', 'right'] : ['top']}
       style={[styles.safe, { backgroundColor: theme.colors.background }]}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerRow}>
-          {isLiquidGlass ? (
-            <GlassContainer spacing={8}>
+        <View
+          style={[
+            styles.contentWrapper,
+            maxContentWidth
+              ? { maxWidth: maxContentWidth, alignSelf: 'center' }
+              : null,
+          ]}
+        >
+          <View style={styles.headerRow}>
+            {isLiquidGlass ? (
+              <GlassContainer spacing={8}>
+                <Pressable
+                  onPress={handleBack}
+                  accessibilityRole="button"
+                  accessibilityLabel="Voltar para Mais"
+                >
+                  <GlassSurface
+                    interactive
+                    tintColor="rgba(122, 90, 248, 0.16)"
+                    borderRadius={14}
+                    style={styles.backBtn}
+                  >
+                    <ArrowLeft size={20} color="#1E1633" strokeWidth={2.4} />
+                  </GlassSurface>
+                </Pressable>
+              </GlassContainer>
+            ) : (
               <Pressable
                 onPress={handleBack}
                 accessibilityRole="button"
                 accessibilityLabel="Voltar para Mais"
+                style={[
+                  styles.backBtn,
+                  { backgroundColor: theme.colors.surface },
+                ]}
               >
-                <GlassSurface
-                  interactive
-                  tintColor="rgba(122, 90, 248, 0.16)"
-                  borderRadius={14}
-                  style={styles.backBtn}
-                >
-                  <ArrowLeft size={20} color="#1E1633" strokeWidth={2.4} />
-                </GlassSurface>
+                <ArrowLeft size={20} color={theme.colors.textPrimary} />
               </Pressable>
-            </GlassContainer>
-          ) : (
-            <Pressable
-              onPress={handleBack}
-              accessibilityRole="button"
-              accessibilityLabel="Voltar para Mais"
-              style={[
-                styles.backBtn,
-                { backgroundColor: theme.colors.surface },
-              ]}
+            )}
+            <Text
+              accessibilityRole="header"
+              style={[theme.typography.h1, { color: theme.colors.textPrimary }]}
             >
-              <ArrowLeft size={20} color={theme.colors.textPrimary} />
-            </Pressable>
-          )}
-          <Text
-            style={[theme.typography.h1, { color: theme.colors.textPrimary }]}
-          >
-            Relatórios
-          </Text>
-        </View>
-
-        <MonthSelector
-          selectedMonth={selectedMonth}
-          onChangeMonth={setSelectedMonth}
-        />
-
-        {loadingSummary || !summary ? (
-          <ClayLoadingState message="Calculando resumo mensal..." />
-        ) : (
-          <>
-            <ClayCard variant="primary" radius="xl" style={styles.balanceCard}>
-              <View style={styles.balanceHeader}>
-                <Wallet size={20} color="#E6DEFF" />
-                <Text
-                  style={[
-                    theme.typography.bodySmall,
-                    { color: '#E6DEFF', marginLeft: 8 },
-                  ]}
-                >
-                  Saldo Disponível em Conta
-                </Text>
-              </View>
-              <Text
-                style={[
-                  theme.typography.hero,
-                  { color: '#FFFFFF', marginTop: 4 },
-                ]}
-              >
-                {formatCentsToBRL(summary.available_account_cents)}
-              </Text>
-              <View style={styles.subBalanceRow}>
-                <Text style={[theme.typography.caption, { color: '#E6DEFF' }]}>
-                  Saldo líquido do mês: {formatCentsToBRL(summary.balance_cents)}
-                </Text>
-                <View style={styles.savedInline}>
-                  <PiggyBank size={13} color="#E6DEFF" />
-                  <Text
-                    style={[
-                      theme.typography.caption,
-                      { color: '#E6DEFF', marginLeft: 4 },
-                    ]}
-                  >
-                    Nos cofrinhos:{' '}
-                    {formatCentsToBRL(summary.total_saved_in_goals_cents)}
-                  </Text>
-                </View>
-              </View>
-            </ClayCard>
-
-            <View style={styles.gridRow}>
-              <ClayCard variant="income" radius="xl" style={styles.halfCard}>
-                <View style={styles.miniHeader}>
-                  <ArrowUpCircle size={18} color={theme.colors.incomeDark} />
-                  <Text
-                    style={[
-                      theme.typography.caption,
-                      { color: theme.colors.incomeDark, marginLeft: 6 },
-                    ]}
-                  >
-                    Receitas
-                  </Text>
-                </View>
-                <Text
-                  style={[
-                    theme.typography.h3,
-                    {
-                      color: theme.colors.incomeDark,
-                      fontFamily: theme.fontFamilies.extraBold,
-                      marginTop: 6,
-                    },
-                  ]}
-                >
-                  {formatCentsToBRL(summary.total_income_cents)}
-                </Text>
-              </ClayCard>
-
-              <ClayCard variant="expense" radius="xl" style={styles.halfCard}>
-                <View style={styles.miniHeader}>
-                  <ArrowDownCircle size={18} color={theme.colors.expenseDark} />
-                  <Text
-                    style={[
-                      theme.typography.caption,
-                      { color: theme.colors.expenseDark, marginLeft: 6 },
-                    ]}
-                  >
-                    Despesas
-                  </Text>
-                </View>
-                <Text
-                  style={[
-                    theme.typography.h3,
-                    {
-                      color: theme.colors.expenseDark,
-                      fontFamily: theme.fontFamilies.extraBold,
-                      marginTop: 6,
-                    },
-                  ]}
-                >
-                  {formatCentsToBRL(summary.total_expense_cents)}
-                </Text>
-              </ClayCard>
-            </View>
-
-            {summary.top_expense_category ? (
-              <ClayCard radius="xl" style={styles.topCatCard}>
-                <View style={styles.topCatRow}>
-                  <View
-                    style={[
-                      styles.topCatIcon,
-                      {
-                        backgroundColor: `${summary.top_expense_category.category_color}24`,
-                      },
-                    ]}
-                  >
-                    <Flame
-                      size={22}
-                      color={summary.top_expense_category.category_color}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={[
-                        theme.typography.caption,
-                        { color: theme.colors.textSecondary },
-                      ]}
-                    >
-                      Maior Categoria de Gasto
-                    </Text>
-                    <Text
-                      style={[
-                        theme.typography.h3,
-                        { color: theme.colors.textPrimary },
-                      ]}
-                    >
-                      {summary.top_expense_category.category_name}
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      theme.typography.h3,
-                      {
-                        color: theme.colors.expenseDark,
-                        fontFamily: theme.fontFamilies.extraBold,
-                      },
-                    ]}
-                  >
-                    {formatCentsToBRL(summary.top_expense_category.total_cents)}
-                  </Text>
-                </View>
-              </ClayCard>
-            ) : null}
-          </>
-        )}
-
-        <ClayCard radius="xl" style={styles.chartCard}>
-          <Text
-            style={[
-              theme.typography.h3,
-              { color: theme.colors.textPrimary, marginBottom: 14 },
-            ]}
-          >
-            Despesas por Categoria
-          </Text>
-
-          {loadingSlices ? (
-            <ClayLoadingState />
-          ) : categorySlices.length === 0 ? (
-            <ClayEmptyState
-              icon={<BarChart3 size={24} color={theme.colors.primary} />}
-              title="Sem despesas no mês"
-              description="Registre despesas para visualizar a distribuição por categoria."
-            />
-          ) : (
-            <>
-              <View style={styles.donutWrapper}>
-                <PieChart
-                  donut
-                  radius={92}
-                  innerRadius={58}
-                  innerCircleColor={theme.colors.surface}
-                  data={pieData}
-                  centerLabelComponent={() => (
-                    <View style={styles.donutCenter}>
-                      <Text
-                        style={[
-                          theme.typography.caption,
-                          { color: theme.colors.textSecondary },
-                        ]}
-                      >
-                        Total
-                      </Text>
-                      <Text
-                        style={[
-                          theme.typography.bodySmall,
-                          {
-                            color: theme.colors.textPrimary,
-                            fontFamily: theme.fontFamilies.extraBold,
-                          },
-                        ]}
-                      >
-                        {formatCentsToBRL(summary?.total_expense_cents ?? 0)}
-                      </Text>
-                    </View>
-                  )}
-                />
-              </View>
-
-              <View style={styles.legendList}>
-                {categorySlices.map((slice) => (
-                  <View key={slice.category_id} style={styles.legendRow}>
-                    <View style={styles.legendLeft}>
-                      <View
-                        style={[
-                          styles.legendDot,
-                          { backgroundColor: slice.category_color },
-                        ]}
-                      />
-                      <DynamicIcon
-                        name={slice.category_icon}
-                        size={16}
-                        color={slice.category_color}
-                      />
-                      <Text
-                        style={[
-                          theme.typography.body,
-                          {
-                            color: theme.colors.textPrimary,
-                            marginLeft: 8,
-                          },
-                        ]}
-                      >
-                        {slice.category_name}
-                      </Text>
-                    </View>
-                    <View style={styles.legendRight}>
-                      <Text
-                        style={[
-                          theme.typography.bodySmall,
-                          {
-                            color: theme.colors.textPrimary,
-                            fontFamily: theme.fontFamilies.bold,
-                          },
-                        ]}
-                      >
-                        {formatCentsToBRL(slice.total_cents)}
-                      </Text>
-                      <Text
-                        style={[
-                          theme.typography.caption,
-                          {
-                            color: theme.colors.textSecondary,
-                            marginLeft: 8,
-                            minWidth: 42,
-                            textAlign: 'right',
-                          },
-                        ]}
-                      >
-                        {slice.percentage}%
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </>
-          )}
-        </ClayCard>
-
-        <ClayCard radius="xl" style={styles.chartCard}>
-          <Text
-            style={[
-              theme.typography.h3,
-              { color: theme.colors.textPrimary, marginBottom: 6 },
-            ]}
-          >
-            Receitas vs. Despesas (6 meses)
-          </Text>
-          <View style={styles.barLegendRow}>
-            <View style={styles.barLegendItem}>
-              <View
-                style={[
-                  styles.legendDot,
-                  { backgroundColor: theme.colors.income },
-                ]}
-              />
-              <Text
-                style={[
-                  theme.typography.caption,
-                  { color: theme.colors.textSecondary },
-                ]}
-              >
-                Receitas (R$)
-              </Text>
-            </View>
-            <View style={styles.barLegendItem}>
-              <View
-                style={[
-                  styles.legendDot,
-                  { backgroundColor: theme.colors.expense },
-                ]}
-              />
-              <Text
-                style={[
-                  theme.typography.caption,
-                  { color: theme.colors.textSecondary },
-                ]}
-              >
-                Despesas (R$)
-              </Text>
-            </View>
+              Relatórios
+            </Text>
           </View>
 
-          {loadingCashflow ? (
-            <ClayLoadingState />
-          ) : (
-            <View style={styles.barChartContainer}>
-              <BarChart
-                data={barData}
-                barWidth={14}
-                spacing={20}
-                roundedTop
-                roundedBottom
-                hideRules
-                xAxisThickness={0}
-                yAxisThickness={0}
-                yAxisTextStyle={{
-                  color: theme.colors.textMuted,
-                  fontSize: 10,
-                }}
-                noOfSections={4}
-                height={180}
-                isAnimated
-              />
+          <MonthSelector
+            selectedMonth={selectedMonth}
+            onChangeMonth={setSelectedMonth}
+          />
+
+          {isRegular ? (
+            <View style={[styles.regularTopRow, { gap: columnGap }]}>
+              <View style={styles.regularCol}>{summaryColumnContent}</View>
+              <View style={styles.regularCol}>{pieChartCardContent}</View>
             </View>
+          ) : (
+            <>
+              {summaryColumnContent}
+              {pieChartCardContent}
+            </>
           )}
-        </ClayCard>
+
+          <ClayCard radius="xl" style={styles.chartCard}>
+            <Text
+              accessibilityRole="header"
+              style={[
+                theme.typography.h3,
+                { color: theme.colors.textPrimary, marginBottom: 6 },
+              ]}
+            >
+              Receitas vs. Despesas (6 meses)
+            </Text>
+            <View style={styles.barLegendRow}>
+              <View style={styles.barLegendItem}>
+                <View
+                  style={[
+                    styles.legendDot,
+                    { backgroundColor: theme.colors.income },
+                  ]}
+                />
+                <Text
+                  style={[
+                    theme.typography.caption,
+                    { color: theme.colors.textSecondary },
+                  ]}
+                >
+                  Receitas (R$)
+                </Text>
+              </View>
+              <View style={styles.barLegendItem}>
+                <View
+                  style={[
+                    styles.legendDot,
+                    { backgroundColor: theme.colors.expense },
+                  ]}
+                />
+                <Text
+                  style={[
+                    theme.typography.caption,
+                    { color: theme.colors.textSecondary },
+                  ]}
+                >
+                  Despesas (R$)
+                </Text>
+              </View>
+            </View>
+
+            {loadingCashflow ? (
+              <ClayLoadingState />
+            ) : (
+              <View style={styles.barChartContainer}>
+                <BarChart
+                  data={barData}
+                  barWidth={14}
+                  spacing={20}
+                  roundedTop
+                  roundedBottom
+                  hideRules
+                  xAxisThickness={0}
+                  yAxisThickness={0}
+                  yAxisTextStyle={{
+                    color: theme.colors.textMuted,
+                    fontSize: 10,
+                  }}
+                  noOfSections={4}
+                  height={180}
+                  isAnimated={!reduceMotion}
+                />
+              </View>
+            )}
+          </ClayCard>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -477,6 +519,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 18,
     paddingBottom: 110,
+  },
+  contentWrapper: {
+    width: '100%',
   },
   headerRow: {
     flexDirection: 'row',
@@ -491,6 +536,13 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  regularTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  regularCol: {
+    flex: 1,
   },
   balanceCard: {
     marginBottom: 12,

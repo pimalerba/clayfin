@@ -54,10 +54,15 @@ export function MonthSelector({
               style={{ marginRight: 6 }}
             />
             <Text
+              accessibilityRole="header"
+              accessibilityLabel={`Mês selecionado: ${formatMonthYearPtBR(
+                selectedMonth
+              )}`}
+              maxFontSizeMultiplier={1.35}
               style={[
                 theme.typography.h3,
                 styles.highContrastText,
-                { color: '#1E1633' },
+                { color: '#1E1633', flexShrink: 1 },
               ]}
             >
               {formatMonthYearPtBR(selectedMonth)}
@@ -109,9 +114,14 @@ export function MonthSelector({
             style={{ marginRight: 6 }}
           />
           <Text
+            accessibilityRole="header"
+            accessibilityLabel={`Mês selecionado: ${formatMonthYearPtBR(
+              selectedMonth
+            )}`}
+            maxFontSizeMultiplier={1.35}
             style={[
               theme.typography.h3,
-              { color: theme.colors.textPrimary },
+              { color: theme.colors.textPrimary, flexShrink: 1 },
             ]}
           >
             {formatMonthYearPtBR(selectedMonth)}

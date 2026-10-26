@@ -29,6 +29,7 @@ import {
   useExportBackup,
   useImportBackup,
   useLiquidGlass,
+  useWindowClass,
 } from '@/hooks';
 import {
   ClayButton,
@@ -43,6 +44,7 @@ import { getTodayISO } from '@/utils/date';
 export default function SettingsScreen() {
   const theme = useAppTheme();
   const isLiquidGlass = useLiquidGlass();
+  const { maxContentWidth } = useWindowClass();
   const { data: categories = [] } = useCategories();
   const exportMutation = useExportBackup();
   const importMutation = useImportBackup();
@@ -180,11 +182,20 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView
-      edges={['top']}
+      edges={Platform.OS === 'ios' ? ['top', 'left', 'right'] : ['top']}
       style={[styles.safe, { backgroundColor: theme.colors.background }]}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          maxContentWidth
+            ? {
+                maxWidth: maxContentWidth,
+                width: '100%',
+                alignSelf: 'center',
+              }
+            : null,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>

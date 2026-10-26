@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -28,6 +29,7 @@ import {
   useGoalContributions,
   useGoalDetail,
   useLiquidGlass,
+  useWindowClass,
 } from '@/hooks';
 import {
   ClayButton,
@@ -56,6 +58,7 @@ import { DynamicIcon } from '@/utils/icons';
 export default function GoalDetailScreen() {
   const theme = useAppTheme();
   const isLiquidGlass = useLiquidGlass();
+  const { maxContentWidth } = useWindowClass();
   const params = useLocalSearchParams<{ id: string }>();
   const goalId = params.id;
 
@@ -170,6 +173,11 @@ export default function GoalDetailScreen() {
 
   return (
     <SafeAreaView
+      edges={
+        Platform.OS === 'ios'
+          ? ['top', 'bottom', 'left', 'right']
+          : ['top', 'bottom']
+      }
       style={[styles.safe, { backgroundColor: theme.colors.background }]}
     >
       {isLiquidGlass ? (
@@ -251,7 +259,16 @@ export default function GoalDetailScreen() {
       )}
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          maxContentWidth
+            ? {
+                maxWidth: maxContentWidth,
+                width: '100%',
+                alignSelf: 'center',
+              }
+            : null,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <ClayCard variant="primary" radius="xxl" style={styles.heroCard}>

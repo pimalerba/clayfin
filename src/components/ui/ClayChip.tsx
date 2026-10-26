@@ -12,6 +12,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
+import { useAccessibilityPreferences } from '@/hooks/useAccessibilityPreferences';
 import { useAppTheme } from '@/theme';
 
 export interface ClayChipProps {
@@ -36,6 +37,7 @@ export function ClayChip({
   accessibilityLabel,
 }: ClayChipProps) {
   const theme = useAppTheme();
+  const { reduceMotion } = useAccessibilityPreferences();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -54,12 +56,16 @@ export function ClayChip({
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ selected }}
       onPressIn={() => {
-        if (onPress) {
+        if (onPress && !reduceMotion) {
           scale.value = withSpring(0.94, { damping: 14, stiffness: 320 });
         }
       }}
       onPressOut={() => {
-        scale.value = withSpring(1, { damping: 14, stiffness: 320 });
+        if (!reduceMotion) {
+          scale.value = withSpring(1, { damping: 14, stiffness: 320 });
+        } else {
+          scale.value = 1;
+        }
       }}
       style={[
         styles.chip,
@@ -86,10 +92,12 @@ export function ClayChip({
     >
       {icon ? <View style={styles.iconSlot}>{icon}</View> : null}
       <Text
+        maxFontSizeMultiplier={1.35}
         style={[
           theme.typography.bodySmall,
           {
             color: textColor,
+            flexShrink: 1,
             fontFamily: selected
               ? theme.fontFamilies.extraBold
               : theme.fontFamilies.bold,

@@ -1,5 +1,12 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Calendar, PiggyBank, Plus, Sparkles } from 'lucide-react-native';
@@ -8,6 +15,7 @@ import {
   useAvailableAccountBalance,
   useGoals,
   useLiquidGlass,
+  useWindowClass,
 } from '@/hooks';
 import {
   ClayButton,
@@ -26,6 +34,7 @@ import { DynamicIcon } from '@/utils/icons';
 export default function GoalsScreen() {
   const theme = useAppTheme();
   const isLiquidGlass = useLiquidGlass();
+  const { maxContentWidth } = useWindowClass();
   const { data: goals = [], isLoading } = useGoals();
   const { data: availableAccountCents = 0 } = useAvailableAccountBalance();
 
@@ -45,11 +54,20 @@ export default function GoalsScreen() {
 
   return (
     <SafeAreaView
-      edges={['top']}
+      edges={Platform.OS === 'ios' ? ['top', 'left', 'right'] : ['top']}
       style={[styles.safe, { backgroundColor: theme.colors.background }]}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          maxContentWidth
+            ? {
+                maxWidth: maxContentWidth,
+                width: '100%',
+                alignSelf: 'center',
+              }
+            : null,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>

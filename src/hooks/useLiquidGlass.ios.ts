@@ -4,6 +4,7 @@ import {
   isGlassEffectAPIAvailable,
   isLiquidGlassAvailable,
 } from 'expo-glass-effect';
+import { useAccessibilityPreferences } from './useAccessibilityPreferences';
 
 /**
  * Verifica no iOS se a versão do sistema é 26+ e se as APIs nativas
@@ -31,6 +32,14 @@ export function canUseLiquidGlass(): boolean {
   }
 }
 
+/**
+ * Retorna `true` somente no iOS 26+ quando a API de Liquid Glass está disponível
+ * E a opção de acessibilidade "Reduzir Transparência" NÃO está ativada.
+ * Quando "Reduzir Transparência" está ativa, retorna `false` para cair
+ * automaticamente no visual sólido Clay.
+ */
 export function useLiquidGlass(): boolean {
-  return useMemo(() => canUseLiquidGlass(), []);
+  const { reduceTransparency } = useAccessibilityPreferences();
+  const hardwareAndOsSupport = useMemo(() => canUseLiquidGlass(), []);
+  return hardwareAndOsSupport && !reduceTransparency;
 }
