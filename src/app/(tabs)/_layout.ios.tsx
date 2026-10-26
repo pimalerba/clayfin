@@ -1,6 +1,7 @@
 import React from 'react';
 import { DynamicColorIOS } from 'react-native';
 import { NativeTabs } from 'expo-router/native-tabs';
+import { hapticTabChange } from '@/utils/haptics';
 
 /**
  * Layout de abas nativo para iOS (`UITabBarController` via `NativeTabs`).
@@ -34,6 +35,11 @@ export default function TabsLayoutIOS() {
     <NativeTabs
       minimizeBehavior="onScrollDown"
       sidebarAdaptable
+      screenListeners={{
+        tabPress: () => {
+          hapticTabChange();
+        },
+      }}
       tintColor={selectedTint}
       backgroundColor={barBackground}
       blurEffect="systemChromeMaterialLight"

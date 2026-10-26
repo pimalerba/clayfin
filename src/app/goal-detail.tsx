@@ -46,6 +46,10 @@ import {
 } from '@/features/schemas';
 import { formatCentsToBRL } from '@/utils/currency';
 import { formatDateShortPtBR, getTodayISO } from '@/utils/date';
+import {
+  hapticGoalCompleted,
+  hapticTransactionSaved,
+} from '@/utils/haptics';
 import { calculateGoalProgress } from '@/utils/progress';
 import { DynamicIcon } from '@/utils/icons';
 
@@ -124,12 +128,23 @@ export default function GoalDetailScreen() {
     try {
       const signedAmount =
         values.mode === 'deposit' ? values.amount_cents : -values.amount_cents;
+      const willCompleteGoal =
+        values.mode === 'deposit' &&
+        goal.target_cents > 0 &&
+        goal.current_cents + values.amount_cents >= goal.target_cents;
 
       await addContributionMutation.mutateAsync({
         goal_id: goal.id,
         amount_cents: signedAmount,
         date: values.date,
       });
+
+      if (willCompleteGoal) {
+        hapticGoalCompleted();
+      } else {
+        hapticTransactionSaved();
+      }
+
       setModalVisible(false);
     } catch (err: any) {
       Alert.alert(

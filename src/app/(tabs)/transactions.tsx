@@ -15,7 +15,12 @@ import {
 } from 'react-native-safe-area-context';
 import { Plus, Search, Receipt, X } from 'lucide-react-native';
 import { useAppTheme } from '@/theme';
-import { useCategories, useLiquidGlass, useTransactions } from '@/hooks';
+import {
+  useCategories,
+  useDeleteTransaction,
+  useLiquidGlass,
+  useTransactions,
+} from '@/hooks';
 import { useUIStore } from '@/store/useUIStore';
 import {
   ClayChip,
@@ -59,6 +64,7 @@ export default function TransactionsScreen() {
   const { data: categories = [] } = useCategories(
     filterType === 'all' ? undefined : filterType
   );
+  const deleteTransactionMutation = useDeleteTransaction();
 
   const {
     data: transactions = [],
@@ -262,6 +268,13 @@ export default function TransactionsScreen() {
                     params: { id: item.id },
                   })
                 }
+                onEdit={() =>
+                  router.push({
+                    pathname: '/transaction-form',
+                    params: { id: item.id },
+                  })
+                }
+                onDelete={() => deleteTransactionMutation.mutate(item.id)}
               />
             )}
           />

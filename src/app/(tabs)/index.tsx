@@ -14,6 +14,7 @@ import {
 import { useAppTheme } from '@/theme';
 import {
   useBudgets,
+  useDeleteTransaction,
   useGoals,
   useMonthlySummary,
   useOnboardingStatus,
@@ -54,6 +55,7 @@ export default function HomeScreen() {
     limit: 5,
   });
   const { data: goals = [] } = useGoals();
+  const deleteTransactionMutation = useDeleteTransaction();
 
   const totalBudgetLimit = budgets.reduce((acc, b) => acc + b.limit_cents, 0);
   const totalBudgetSpent = budgets.reduce((acc, b) => acc + b.spent_cents, 0);
@@ -480,6 +482,13 @@ export default function HomeScreen() {
                   params: { id: tx.id },
                 })
               }
+              onEdit={() =>
+                router.push({
+                  pathname: '/transaction-form',
+                  params: { id: tx.id },
+                })
+              }
+              onDelete={() => deleteTransactionMutation.mutate(tx.id)}
             />
           ))
         )}

@@ -39,6 +39,10 @@ import {
 import { MonthSelector } from '@/components/MonthSelector';
 import { BudgetFormData, budgetFormSchema } from '@/features/schemas';
 import { formatCentsToBRL } from '@/utils/currency';
+import {
+  hapticBudgetExceeded,
+  hapticTransactionSaved,
+} from '@/utils/haptics';
 import { calculateBudgetProgress } from '@/utils/progress';
 import { DynamicIcon } from '@/utils/icons';
 import { BudgetWithUsage } from '@/types';
@@ -91,11 +95,26 @@ export default function BudgetsScreen() {
   };
 
   const onSubmit = async (values: BudgetFormData) => {
+    const existingBudget = budgets.find(
+      (b) => b.category_id === values.category_id
+    );
+    const isExceeded =
+      existingBudget != null &&
+      values.limit_cents > 0 &&
+      existingBudget.spent_cents >= values.limit_cents;
+
     await upsertMutation.mutateAsync({
       category_id: values.category_id,
       month: selectedMonth,
       limit_cents: values.limit_cents,
     });
+
+    if (isExceeded) {
+      hapticBudgetExceeded();
+    } else {
+      hapticTransactionSaved();
+    }
+
     setModalVisible(false);
   };
 

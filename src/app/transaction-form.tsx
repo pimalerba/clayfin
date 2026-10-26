@@ -15,13 +15,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ArrowDownCircle,
   ArrowUpCircle,
-  Calendar,
   FileText,
   Trash2,
   X,
 } from 'lucide-react-native';
 import { useAppTheme } from '@/theme';
 import {
+  useBudgets,
   useCategories,
   useCreateTransaction,
   useDeleteTransaction,
@@ -36,12 +36,17 @@ import {
   ClayInput,
   GlassContainer,
   GlassSurface,
+  NativeDateField,
 } from '@/components/ui';
 import {
   TransactionFormData,
   transactionFormSchema,
 } from '@/features/schemas';
 import { getTodayISO } from '@/utils/date';
+import {
+  hapticBudgetExceeded,
+  hapticTransactionSaved,
+} from '@/utils/haptics';
 import { DynamicIcon } from '@/utils/icons';
 
 export default function TransactionFormScreen() {
@@ -76,6 +81,9 @@ export default function TransactionFormScreen() {
 
   const selectedType = watch('type');
   const selectedCategoryId = watch('category_id');
+  const selectedDate = watch('date');
+  const txMonth = (selectedDate || getTodayISO()).slice(0, 7);
+  const { data: monthBudgets = [] } = useBudgets(txMonth);
 
   const filteredCategories = useMemo(
     () => allCategories.filter((c) => c.type === selectedType),
@@ -108,6 +116,26 @@ export default function TransactionFormScreen() {
 
   const onSubmit = async (values: TransactionFormData) => {
     try {
+      const matchingBudget =
+        values.type === 'expense'
+          ? monthBudgets.find((b) => b.category_id === values.category_id)
+          : undefined;
+      const previousExpenseInSameBudget =
+        isEditing &&
+        existingTx &&
+        existingTx.type === 'expense' &&
+        existingTx.category_id === values.category_id &&
+        existingTx.date.slice(0, 7) === values.date.slice(0, 7)
+          ? existingTx.amount_cents
+          : 0;
+      const willExceedBudget =
+        matchingBudget != null &&
+        matchingBudget.limit_cents > 0 &&
+        matchingBudget.spent_cents -
+          previousExpenseInSameBudget +
+          values.amount_cents >=
+          matchingBudget.limit_cents;
+
       if (isEditing && params.id) {
         await updateMutation.mutateAsync({
           id: params.id,
@@ -116,6 +144,13 @@ export default function TransactionFormScreen() {
       } else {
         await createMutation.mutateAsync(values);
       }
+
+      if (willExceedBudget) {
+        hapticBudgetExceeded();
+      } else {
+        hapticTransactionSaved();
+      }
+
       router.back();
     } catch (err: any) {
       Alert.alert(
@@ -309,14 +344,10 @@ export default function TransactionFormScreen() {
             control={control}
             name="date"
             render={({ field: { value, onChange } }) => (
-              <ClayInput
-                label="Data (AAAA-MM-DD)"
-                placeholder="2026-10-26"
+              <NativeDateField
+                label={Platform.OS === 'ios' ? 'Data' : 'Data (AAAA-MM-DD)'}
                 value={value}
-                onChangeText={onChange}
-                leftIcon={
-                  <Calendar size={18} color={theme.colors.textSecondary} />
-                }
+                onChange={onChange}
                 errorMessage={errors.date?.message}
               />
             )}

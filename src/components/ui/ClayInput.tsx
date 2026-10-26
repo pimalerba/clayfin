@@ -1,5 +1,6 @@
 import React, { ReactNode, useState } from 'react';
 import {
+  Platform,
   StyleProp,
   StyleSheet,
   Text,
@@ -90,7 +91,14 @@ export function ClayInput({
           onChangeText={handleTextChange}
           placeholder={placeholder}
           placeholderTextColor={theme.colors.textMuted}
-          keyboardType={isCurrency ? 'numeric' : rest.keyboardType}
+          keyboardType={
+            isCurrency
+              ? Platform.OS === 'ios'
+                ? 'number-pad'
+                : 'numeric'
+              : rest.keyboardType
+          }
+          inputMode={isCurrency ? 'numeric' : rest.inputMode}
           accessibilityLabel={rest.accessibilityLabel ?? label ?? placeholder}
           onFocus={(e) => {
             setFocused(true);
