@@ -54,40 +54,46 @@ export function ClayButton({
 
   const getGradientColors = (): readonly [string, string] => {
     if (isDisabled) {
-      return ['#D9D3EC', '#C8C1DF'];
+      return theme.isDark ? ['#2A2242', '#211B34'] : ['#D9D3EC', '#C8C1DF'];
     }
     switch (variant) {
       case 'primary':
-        return ['#9980F2', '#7C5FE0'];
+        return theme.isDark ? ['#8A6FE8', '#6A4FD0'] : ['#9980F2', '#7C5FE0'];
       case 'secondary':
-        return ['#FFFFFF', '#F3EFFC'];
+        return theme.isDark ? ['#2A2244', '#201A35'] : ['#FFFFFF', '#F3EFFC'];
       case 'income':
-        return ['#54C997', '#38A878'];
+        return theme.isDark ? ['#3BB880', '#258E5E'] : ['#54C997', '#38A878'];
       case 'danger':
-        return ['#F4837A', '#E35B50'];
+        return theme.isDark ? ['#E35B50', '#BF3A30'] : ['#F4837A', '#E35B50'];
       case 'ghost':
-        return ['rgba(255,255,255,0.65)', 'rgba(242,239,250,0.65)'];
+        return theme.isDark
+          ? ['rgba(36,29,59,0.70)', 'rgba(28,22,46,0.70)']
+          : ['rgba(255,255,255,0.65)', 'rgba(242,239,250,0.65)'];
     }
   };
 
   const getTextColor = (): string => {
-    if (isDisabled) return '#7E76A1';
+    if (isDisabled) return theme.colors.textMuted;
     if (variant === 'secondary' || variant === 'ghost') {
       return theme.colors.textPrimary;
     }
-    return '#FFFFFF';
+    return theme.colors.primaryText;
   };
 
   const getBorders = () => {
     if (variant === 'secondary' || variant === 'ghost') {
       return {
-        top: 'rgba(255, 255, 255, 0.95)',
-        bottom: 'rgba(138, 111, 232, 0.18)',
+        top: theme.colors.clayHighlight,
+        bottom: theme.colors.clayShadowInner,
       };
     }
     return {
-      top: 'rgba(255, 255, 255, 0.36)',
-      bottom: 'rgba(30, 18, 72, 0.28)',
+      top: theme.isDark
+        ? 'rgba(255, 255, 255, 0.22)'
+        : 'rgba(255, 255, 255, 0.36)',
+      bottom: theme.isDark
+        ? 'rgba(0, 0, 0, 0.45)'
+        : 'rgba(30, 18, 72, 0.28)',
     };
   };
 

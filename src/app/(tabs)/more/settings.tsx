@@ -17,12 +17,15 @@ import {
   ArrowLeft,
   Download,
   FolderKanban,
+  Moon,
   Plus,
   ShieldCheck,
+  Smartphone,
+  Sun,
   Trash2,
   Upload,
 } from 'lucide-react-native';
-import { useAppTheme } from '@/theme';
+import { useAppTheme, useThemePreference } from '@/theme';
 import {
   useCategories,
   useClearAllData,
@@ -34,6 +37,7 @@ import {
 import {
   ClayButton,
   ClayCard,
+  ClayChip,
   GlassContainer,
   GlassSurface,
 } from '@/components/ui';
@@ -46,6 +50,7 @@ import { getTodayISO } from '@/utils/date';
 
 export default function SettingsScreen() {
   const theme = useAppTheme();
+  const { preference, setPreference } = useThemePreference();
   const isLiquidGlass = useLiquidGlass();
   const { maxContentWidth } = useWindowClass();
   const { data: categories = [] } = useCategories();
@@ -102,64 +107,72 @@ export default function SettingsScreen() {
 
   const handleImportBackup = async () => {
     try {
-      const picked = await DocumentPicker.getDocumentAsync({
-        type: ['application/json', 'text/plain', '*/*'],
+      const pickerResult = await DocumentPicker.getDocumentAsync({
+        type: ['application/json', 'text/json', '*/*'],
         copyToCacheDirectory: true,
       });
 
-      if (picked.canceled || !picked.assets || picked.assets.length === 0) {
+      if (pickerResult.canceled || !pickerResult.assets?.[0]) {
         return;
       }
 
-      const asset = picked.assets[0];
-      const sizeInBytes = asset.size ?? 0;
-      if (sizeInBytes > 0) {
-        const sizeCheck = validateBackupFileSize(sizeInBytes);
-        if (!sizeCheck.valid) {
-          Alert.alert(
-            'Arquivo Muito Grande',
-            sizeCheck.error ??
-              'O arquivo selecionado excede o limite máximo permitido.'
-          );
-          return;
-        }
-      }
+      const asset = pickerResult.assets[0];
+      const selectedFile = new File(asset.uri);
 
-      const pickedFile = new File(asset.uri);
-      const rawText = await pickedFile.text();
-
-      const validation = validateBackupPayload(rawText);
-      if (!validation.valid || !validation.payload) {
-        Alert.alert(
-          'Arquivo de Backup Inválido',
-          validation.error ?? 'O arquivo selecionado não é válido.'
-        );
+      if (!selectedFile.exists) {
+        Alert.alert('Erro', 'Arquivo selecionado não pôde ser lido.');
         return;
       }
 
-      const { categories: cats, transactions: txs, goals } =
-        validation.payload.data;
+      const fileSizeValidation = validateBackupFileSize(selectedFile.size ?? 0);
+      if (!fileSizeValidation.valid) {
+        Alert.alert('Arquivo Inválido', fileSizeValidation.error);
+        return;
+      }
+
+      const fileText = await selectedFile.text();
+      let rawJson: unknown;
+      try {
+        rawJson = JSON.parse(fileText);
+      } catch {
+        Alert.alert('Arquivo Inválido', 'O arquivo selecionado não contém um JSON válido.');
+        return;
+      }
+
+      const payloadValidation = validateBackupPayload(rawJson);
+      if (!payloadValidation.valid || !payloadValidation.payload) {
+        Alert.alert('Arquivo Inválido', payloadValidation.error);
+        return;
+      }
+
+      const backupData = payloadValidation.payload.data;
+      const totalItems =
+        backupData.transactions.length +
+        backupData.categories.length +
+        backupData.budgets.length +
+        backupData.goals.length +
+        (backupData.recurring_rules?.length ?? 0);
 
       Alert.alert(
-        'Confirmar Restauração de Backup',
-        `O backup contém ${cats.length} categorias, ${txs.length} transações e ${goals.length} metas.\n\nIsso substituirá TODOS os dados atuais do dispositivo. Deseja continuar?`,
+        'Confirmar Restauração',
+        `Deseja restaurar este backup (Versão ${payloadValidation.payload.version}) contendo:\n• ${backupData.categories.length} categorias\n• ${backupData.transactions.length} transações\n• ${backupData.budgets.length} orçamentos\n• ${backupData.goals.length} metas\n${backupData.recurring_rules ? `• ${backupData.recurring_rules.length} regras recorrentes\n` : ''}\nATENÇÃO: Todos os dados atuais deste dispositivo serão substituídos.`,
         [
           { text: 'Cancelar', style: 'cancel' },
           {
-            text: 'Sobrescrever e Importar',
+            text: 'Substituir e Restaurar',
             style: 'destructive',
             onPress: async () => {
               try {
-                await importMutation.mutateAsync(validation.payload!);
+                await importMutation.mutateAsync(payloadValidation.payload!);
                 Alert.alert(
-                  'Backup Restaurado!',
-                  'Todos os seus dados foram importados com sucesso.'
+                  'Backup Restaurado',
+                  `${totalItems} itens importados com sucesso!`
                 );
               } catch (importErr: any) {
                 Alert.alert(
-                  'Erro ao restaurar backup',
+                  'Falha na importação',
                   importErr?.message ??
-                    'Não foi possível importar os dados do backup. Tente novamente.'
+                    'Não foi possível restaurar os dados do backup.'
                 );
               }
             },
@@ -244,11 +257,11 @@ export default function SettingsScreen() {
               >
                 <GlassSurface
                   interactive
-                  tintColor="rgba(122, 90, 248, 0.16)"
+                  tintColor={theme.isDark ? 'rgba(157, 133, 242, 0.20)' : 'rgba(122, 90, 248, 0.16)'}
                   borderRadius={14}
                   style={styles.backBtn}
                 >
-                  <ArrowLeft size={20} color="#1E1633" strokeWidth={2.4} />
+                  <ArrowLeft size={20} color={theme.colors.textPrimary} strokeWidth={2.4} />
                 </GlassSurface>
               </Pressable>
             </GlassContainer>
@@ -301,6 +314,64 @@ export default function SettingsScreen() {
                 Exporte um backup regularmente!
               </Text>
             </View>
+          </View>
+        </ClayCard>
+
+        <ClayCard radius="xl" style={styles.sectionCard}>
+          <Text
+            style={[
+              theme.typography.h3,
+              { color: theme.colors.textPrimary, marginBottom: 4 },
+            ]}
+          >
+            Aparência
+          </Text>
+          <Text
+            style={[
+              theme.typography.bodySmall,
+              { color: theme.colors.textSecondary, marginBottom: 14 },
+            ]}
+          >
+            Escolha o tema do aplicativo ou acompanhe as configurações do seu aparelho.
+          </Text>
+
+          <View style={styles.appearanceRow}>
+            <ClayChip
+              label="Automático"
+              icon={
+                <Smartphone
+                  size={16}
+                  color={preference === 'auto' ? '#FFFFFF' : theme.colors.textSecondary}
+                />
+              }
+              selected={preference === 'auto'}
+              onPress={() => setPreference('auto')}
+              style={styles.appearanceChip}
+            />
+            <ClayChip
+              label="Claro"
+              icon={
+                <Sun
+                  size={16}
+                  color={preference === 'light' ? '#FFFFFF' : theme.colors.textSecondary}
+                />
+              }
+              selected={preference === 'light'}
+              onPress={() => setPreference('light')}
+              style={styles.appearanceChip}
+            />
+            <ClayChip
+              label="Escuro"
+              icon={
+                <Moon
+                  size={16}
+                  color={preference === 'dark' ? '#FFFFFF' : theme.colors.textSecondary}
+                />
+              }
+              selected={preference === 'dark'}
+              onPress={() => setPreference('dark')}
+              style={styles.appearanceChip}
+            />
           </View>
         </ClayCard>
 
@@ -422,7 +493,7 @@ export default function SettingsScreen() {
           <Text
             style={[
               theme.typography.h3,
-              { color: theme.colors.expenseDark, marginBottom: 4 },
+              { color: theme.colors.expense, marginBottom: 4 },
             ]}
           >
             Zona de Perigo
@@ -489,6 +560,14 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     marginBottom: 16,
+  },
+  appearanceRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  appearanceChip: {
+    flexGrow: 1,
   },
   backupBtns: {
     marginTop: 4,

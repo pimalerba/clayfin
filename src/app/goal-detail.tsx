@@ -189,11 +189,11 @@ export default function GoalDetailScreen() {
           >
             <GlassSurface
               interactive
-              tintColor="rgba(122, 90, 248, 0.16)"
+              tintColor={theme.isDark ? "rgba(157, 133, 242, 0.20)" : "rgba(122, 90, 248, 0.16)"}
               borderRadius={22}
               style={styles.iconBtn}
             >
-              <ArrowLeft size={22} color="#1E1633" strokeWidth={2.4} />
+              <ArrowLeft size={22} color={theme.colors.textPrimary} strokeWidth={2.4} />
             </GlassSurface>
           </Pressable>
 
@@ -201,7 +201,7 @@ export default function GoalDetailScreen() {
             numberOfLines={1}
             style={[
               theme.typography.h2,
-              { color: '#1E1633', flex: 1, textAlign: 'center' },
+              { color: theme.colors.textPrimary, flex: 1, textAlign: 'center' },
             ]}
           >
             {goal.name}
@@ -216,11 +216,11 @@ export default function GoalDetailScreen() {
           >
             <GlassSurface
               interactive
-              tintColor="rgba(122, 90, 248, 0.16)"
+              tintColor={theme.isDark ? "rgba(157, 133, 242, 0.20)" : "rgba(122, 90, 248, 0.16)"}
               borderRadius={22}
               style={styles.iconBtn}
             >
-              <Edit3 size={20} color="#1E1633" strokeWidth={2.4} />
+              <Edit3 size={20} color={theme.colors.textPrimary} strokeWidth={2.4} />
             </GlassSurface>
           </Pressable>
         </GlassContainer>

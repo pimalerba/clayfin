@@ -74,13 +74,13 @@ export function ClayInput({
         style={[
           styles.inputOuter,
           {
-            backgroundColor: theme.colors.surface,
+            backgroundColor: theme.colors.inputBackground,
             borderRadius: theme.radii.md,
             borderColor: errorMessage
               ? theme.colors.expense
               : focused
               ? theme.colors.primary
-              : 'rgba(138, 111, 232, 0.18)',
+              : theme.colors.inputBorder,
           },
         ]}
       >
@@ -90,7 +90,7 @@ export function ClayInput({
           value={displayValue}
           onChangeText={handleTextChange}
           placeholder={placeholder}
-          placeholderTextColor={theme.colors.textMuted}
+          placeholderTextColor={theme.colors.textPlaceholder}
           keyboardType={
             isCurrency
               ? Platform.OS === 'ios'
@@ -130,7 +130,7 @@ export function ClayInput({
           style={[
             theme.typography.caption,
             styles.errorText,
-            { color: theme.colors.expenseDark },
+            { color: theme.colors.expense },
           ]}
         >
           {errorMessage}

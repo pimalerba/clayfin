@@ -106,10 +106,10 @@ function ClayTabItem({
           styles.iconPill,
           isFocused && {
             backgroundColor: theme.colors.primary,
-            borderTopColor: 'rgba(255,255,255,0.42)',
-            borderLeftColor: 'rgba(255,255,255,0.42)',
-            borderBottomColor: 'rgba(40,20,100,0.28)',
-            borderRightColor: 'rgba(40,20,100,0.28)',
+            borderTopColor: theme.isDark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.42)',
+            borderLeftColor: theme.isDark ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.42)',
+            borderBottomColor: theme.isDark ? 'rgba(0,0,0,0.50)' : 'rgba(40,20,100,0.28)',
+            borderRightColor: theme.isDark ? 'rgba(0,0,0,0.50)' : 'rgba(40,20,100,0.28)',
             borderTopWidth: 1.5,
             borderLeftWidth: 1.5,
             borderBottomWidth: 2.5,
@@ -125,7 +125,9 @@ function ClayTabItem({
           theme.typography.caption,
           styles.tabLabel,
           {
-            color: isFocused ? theme.colors.primaryDark : theme.colors.textSecondary,
+            color: isFocused
+              ? (theme.isDark ? theme.colors.primary : theme.colors.primaryDark)
+              : theme.colors.textSecondary,
             fontFamily: isFocused
               ? theme.fontFamilies.extraBold
               : theme.fontFamilies.medium,
@@ -165,7 +167,7 @@ export function ClayTabBar({
           styles.barSurface,
           theme.shadows.lg,
           {
-            backgroundColor: theme.colors.surface,
+            backgroundColor: theme.colors.tabBarBackground,
             borderRadius: theme.radii.xl,
             borderTopColor: theme.colors.clayHighlight,
             borderLeftColor: theme.colors.clayHighlight,

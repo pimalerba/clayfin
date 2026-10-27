@@ -49,15 +49,15 @@ export function ClayProgressBar({
 
   const getFillColors = (): readonly [string, string] => {
     if (alertLevel === 'exceeded') {
-      return ['#F5857C', '#E05348'];
+      return theme.isDark ? ['#FF7E75', '#D94E46'] : ['#F5857C', '#E05348'];
     }
     if (alertLevel === 'warning') {
-      return ['#F8B87E', '#EA8C3E'];
+      return theme.isDark ? ['#FFB067', '#DE8533'] : ['#F8B87E', '#EA8C3E'];
     }
     if (customColor) {
       return [customColor, customColor];
     }
-    return ['#9A82F3', '#7A5CE0'];
+    return theme.isDark ? ['#9E86F3', '#7356DC'] : ['#9A82F3', '#7A5CE0'];
   };
 
   return (
@@ -71,10 +71,10 @@ export function ClayProgressBar({
           height,
           borderRadius: height / 2,
           backgroundColor: theme.colors.backgroundSecondary,
-          borderTopColor: 'rgba(92, 73, 158, 0.16)',
-          borderLeftColor: 'rgba(92, 73, 158, 0.16)',
-          borderBottomColor: 'rgba(255, 255, 255, 0.85)',
-          borderRightColor: 'rgba(255, 255, 255, 0.85)',
+          borderTopColor: theme.colors.clayShadowInner,
+          borderLeftColor: theme.colors.clayShadowInner,
+          borderBottomColor: theme.colors.clayHighlight,
+          borderRightColor: theme.colors.clayHighlight,
         },
         style,
       ]}

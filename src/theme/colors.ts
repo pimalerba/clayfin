@@ -4,6 +4,7 @@ export interface ThemeColors {
   surface: string;
   surfaceElevated: string;
   surfacePressed: string;
+  surfaceSubtle: string;
   primary: string;
   primaryLight: string;
   primaryDark: string;
@@ -22,11 +23,25 @@ export interface ThemeColors {
   textPrimary: string;
   textSecondary: string;
   textMuted: string;
+  textPlaceholder: string;
   border: string;
+  borderSubtle: string;
   clayHighlight: string;
   clayShadowInner: string;
   clayShadowOuter: string;
   overlay: string;
+  inputBackground: string;
+  inputBorder: string;
+  cardGradientDefault: readonly [string, string];
+  cardGradientSubtle: readonly [string, string];
+  cardGradientPrimary: readonly [string, string];
+  cardGradientIncome: readonly [string, string];
+  cardGradientExpense: readonly [string, string];
+  chartGrid: string;
+  chartLabel: string;
+  tabBarBackground: string;
+  tabBarBorder: string;
+  shadowColor: string;
 }
 
 export const lightColors: ThemeColors = {
@@ -35,60 +50,90 @@ export const lightColors: ThemeColors = {
   surface: '#FBF9FF',
   surfaceElevated: '#FFFFFF',
   surfacePressed: '#EDE8F8',
-  primary: '#8A6FE8',
+  surfaceSubtle: '#F3EFFC',
+  primary: '#7E61E3',
   primaryLight: '#E4DCFF',
-  primaryDark: '#6A4FD0',
+  primaryDark: '#6648CE',
   primaryText: '#FFFFFF',
   secondary: '#72B7F9',
   secondaryLight: '#DDF0FF',
-  income: '#44B988',
+  income: '#208557',
   incomeLight: '#D9F6E8',
-  incomeDark: '#2A8D63',
-  expense: '#F07167',
+  incomeDark: '#176342',
+  expense: '#D33829',
   expenseLight: '#FFE2DF',
-  expenseDark: '#C94A40',
-  warning: '#F4A261',
+  expenseDark: '#A62215',
+  warning: '#B3580D',
   warningLight: '#FFF0DF',
-  warningDark: '#C87836',
+  warningDark: '#8A4106',
   textPrimary: '#2D264B',
-  textSecondary: '#6E668F',
-  textMuted: '#A199BE',
+  textSecondary: '#5C537E',
+  textMuted: '#7C73A0',
+  textPlaceholder: '#9C93BC',
   border: '#E4DEFA',
+  borderSubtle: '#EFEBFD',
   clayHighlight: 'rgba(255, 255, 255, 0.92)',
   clayShadowInner: 'rgba(138, 111, 232, 0.14)',
   clayShadowOuter: 'rgba(92, 73, 158, 0.14)',
   overlay: 'rgba(45, 38, 75, 0.45)',
+  inputBackground: '#FFFFFF',
+  inputBorder: '#E4DEFA',
+  cardGradientDefault: ['#FFFFFF', '#F7F4FD'],
+  cardGradientSubtle: ['#F6F3FC', '#ECE7F8'],
+  cardGradientPrimary: ['#9980F2', '#7E61E3'],
+  cardGradientIncome: ['#E6FAF0', '#D2F3E3'],
+  cardGradientExpense: ['#FFECEA', '#FFE0DC'],
+  chartGrid: 'rgba(138, 111, 232, 0.15)',
+  chartLabel: '#5C537E',
+  tabBarBackground: '#FBF9FF',
+  tabBarBorder: '#E4DEFA',
+  shadowColor: '#5C499E',
 };
 
 export const darkColors: ThemeColors = {
-  background: '#1B172B',
-  backgroundSecondary: '#241F38',
-  surface: '#2A2442',
-  surfaceElevated: '#342D52',
-  surfacePressed: '#211C35',
-  primary: '#9D85F2',
-  primaryLight: '#3D326B',
-  primaryDark: '#7C62DC',
+  background: '#140F22',
+  backgroundSecondary: '#1C162E',
+  surface: '#241D3B',
+  surfaceElevated: '#2F264C',
+  surfacePressed: '#1D1730',
+  surfaceSubtle: '#1F1932',
+  primary: '#8B70EC',
+  primaryLight: '#34275E',
+  primaryDark: '#6D4ECC',
   primaryText: '#FFFFFF',
   secondary: '#72B7F9',
-  secondaryLight: '#223B59',
-  income: '#55CE9B',
-  incomeLight: '#1E4637',
-  incomeDark: '#3DA579',
-  expense: '#F4837A',
-  expenseLight: '#4D2525',
-  expenseDark: '#D95D53',
-  warning: '#F7B277',
-  warningLight: '#4A3623',
-  warningDark: '#D68C4E',
+  secondaryLight: '#1B3454',
+  income: '#4EE2A2',
+  incomeLight: '#14382A',
+  incomeDark: '#2FB87C',
+  expense: '#FF7E75',
+  expenseLight: '#471B1B',
+  expenseDark: '#D94E46',
+  warning: '#FFB067',
+  warningLight: '#442914',
+  warningDark: '#DE8533',
   textPrimary: '#F5F2FF',
-  textSecondary: '#B8B0D9',
-  textMuted: '#7E76A1',
-  border: '#3B335B',
-  clayHighlight: 'rgba(255, 255, 255, 0.10)',
-  clayShadowInner: 'rgba(0, 0, 0, 0.35)',
-  clayShadowOuter: 'rgba(0, 0, 0, 0.45)',
-  overlay: 'rgba(10, 8, 20, 0.68)',
+  textSecondary: '#B8AFDB',
+  textMuted: '#8A7FA8',
+  textPlaceholder: '#6E648C',
+  border: '#362B54',
+  borderSubtle: '#282040',
+  clayHighlight: 'rgba(255, 255, 255, 0.12)',
+  clayShadowInner: 'rgba(0, 0, 0, 0.38)',
+  clayShadowOuter: 'rgba(0, 0, 0, 0.55)',
+  overlay: 'rgba(6, 4, 12, 0.72)',
+  inputBackground: '#1B152B',
+  inputBorder: '#382E57',
+  cardGradientDefault: ['#2A2244', '#201A35'],
+  cardGradientSubtle: ['#231B39', '#1A142C'],
+  cardGradientPrimary: ['#7A5DE6', '#6041CC'],
+  cardGradientIncome: ['#18362B', '#11281F'],
+  cardGradientExpense: ['#3E1E1E', '#2D1414'],
+  chartGrid: 'rgba(255, 255, 255, 0.08)',
+  chartLabel: '#B8AFDB',
+  tabBarBackground: '#1C162E',
+  tabBarBorder: '#2D2348',
+  shadowColor: '#000000',
 };
 
 export const CATEGORY_PRESET_COLORS = [

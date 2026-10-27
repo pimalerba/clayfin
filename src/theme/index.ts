@@ -71,29 +71,32 @@ export const typography: Record<string, TextStyle> = {
   },
 };
 
-export const clayShadows: Record<'sm' | 'md' | 'lg', ViewStyle> = {
+export const createClayShadows = (isDark: boolean): Record<'sm' | 'md' | 'lg', ViewStyle> => ({
   sm: {
-    shadowColor: '#5C499E',
+    shadowColor: isDark ? '#000000' : '#5C499E',
     shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.10,
+    shadowOpacity: isDark ? 0.35 : 0.10,
     shadowRadius: 10,
     elevation: 4,
   },
   md: {
-    shadowColor: '#5C499E',
+    shadowColor: isDark ? '#000000' : '#5C499E',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
+    shadowOpacity: isDark ? 0.45 : 0.14,
     shadowRadius: 16,
     elevation: 7,
   },
   lg: {
-    shadowColor: '#5C499E',
+    shadowColor: isDark ? '#000000' : '#5C499E',
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.18,
+    shadowOpacity: isDark ? 0.55 : 0.18,
     shadowRadius: 22,
     elevation: 11,
   },
-};
+});
+
+export const clayShadows = createClayShadows(false);
+export const darkClayShadows = createClayShadows(true);
 
 export interface AppTheme {
   colors: ThemeColors;
@@ -101,7 +104,7 @@ export interface AppTheme {
   radii: typeof radii;
   typography: typeof typography;
   fontFamilies: typeof fontFamilies;
-  shadows: typeof clayShadows;
+  shadows: Record<'sm' | 'md' | 'lg', ViewStyle>;
   isDark: boolean;
 }
 
@@ -121,13 +124,16 @@ export const darkTheme: AppTheme = {
   radii,
   typography,
   fontFamilies,
-  shadows: clayShadows,
+  shadows: darkClayShadows,
   isDark: true,
 };
 
-export function useAppTheme(): AppTheme {
-  return lightTheme;
-}
+export {
+  ThemePreferenceProvider,
+  useAppTheme,
+  useThemePreference,
+  type ThemePreference,
+} from './ThemeContext';
 
 export { lightColors, darkColors, CATEGORY_PRESET_COLORS };
 export type { ThemeColors };
