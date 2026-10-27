@@ -25,6 +25,10 @@ import { useLiquidGlass } from '@/hooks/useLiquidGlass';
 import { useAppTheme } from '@/theme';
 import { ClayButton, ClayCard } from '@/components/ui';
 
+export const unstable_settings = {
+  anchor: '(tabs)',
+};
+
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const queryClient = new QueryClient({

@@ -60,7 +60,7 @@ export const TransactionRepository: ITransactionRepository = {
     if (filters.search && filters.search.trim().length > 0) {
       const q = `%${filters.search.trim().toLowerCase()}%`;
       conditions.push(
-        '(LOWER(COALESCE(t.description, "")) LIKE ? OR LOWER(c.name) LIKE ?)'
+        '(LOWER(COALESCE(t.description, "")) LIKE ? OR LOWER(COALESCE(c.name, "")) LIKE ?)'
       );
       params.push(q, q);
     }
@@ -72,11 +72,11 @@ export const TransactionRepository: ITransactionRepository = {
     return db.getAllAsync<TransactionWithCategory>(
       `SELECT
         t.*,
-        c.name AS category_name,
-        c.icon AS category_icon,
-        c.color AS category_color
+        COALESCE(c.name, 'Sem categoria') AS category_name,
+        COALESCE(c.icon, 'Tag') AS category_icon,
+        COALESCE(c.color, '#6B6385') AS category_color
        FROM transactions t
-       INNER JOIN categories c ON c.id = t.category_id
+       LEFT JOIN categories c ON c.id = t.category_id
        ${whereClause}
        ORDER BY t.date DESC, t.created_at DESC
        ${limitClause};`,
@@ -89,11 +89,11 @@ export const TransactionRepository: ITransactionRepository = {
     return db.getFirstAsync<TransactionWithCategory>(
       `SELECT
         t.*,
-        c.name AS category_name,
-        c.icon AS category_icon,
-        c.color AS category_color
+        COALESCE(c.name, 'Sem categoria') AS category_name,
+        COALESCE(c.icon, 'Tag') AS category_icon,
+        COALESCE(c.color, '#6B6385') AS category_color
        FROM transactions t
-       INNER JOIN categories c ON c.id = t.category_id
+       LEFT JOIN categories c ON c.id = t.category_id
        WHERE t.id = ?;`,
       [id]
     );

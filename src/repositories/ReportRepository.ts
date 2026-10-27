@@ -95,15 +95,15 @@ export const ReportRepository: IReportRepository = {
       total_cents: number;
     }>(
       `SELECT
-        c.id AS category_id,
-        c.name AS category_name,
-        c.icon AS category_icon,
-        c.color AS category_color,
+        COALESCE(c.id, t.category_id) AS category_id,
+        COALESCE(c.name, 'Sem categoria') AS category_name,
+        COALESCE(c.icon, 'Tag') AS category_icon,
+        COALESCE(c.color, '#6B6385') AS category_color,
         COALESCE(SUM(t.amount_cents), 0) AS total_cents
        FROM transactions t
-       INNER JOIN categories c ON c.id = t.category_id
+       LEFT JOIN categories c ON c.id = t.category_id
        WHERE t.type = 'expense' AND t.date >= ? AND t.date <= ?
-       GROUP BY c.id, c.name, c.icon, c.color
+       GROUP BY COALESCE(c.id, t.category_id), COALESCE(c.name, 'Sem categoria'), COALESCE(c.icon, 'Tag'), COALESCE(c.color, '#6B6385')
        ORDER BY total_cents DESC
        LIMIT 1;`,
       [startDate, endDate]
@@ -134,15 +134,15 @@ export const ReportRepository: IReportRepository = {
       total_cents: number;
     }>(
       `SELECT
-        c.id AS category_id,
-        c.name AS category_name,
-        c.icon AS category_icon,
-        c.color AS category_color,
+        COALESCE(c.id, t.category_id) AS category_id,
+        COALESCE(c.name, 'Sem categoria') AS category_name,
+        COALESCE(c.icon, 'Tag') AS category_icon,
+        COALESCE(c.color, '#6B6385') AS category_color,
         COALESCE(SUM(t.amount_cents), 0) AS total_cents
        FROM transactions t
-       INNER JOIN categories c ON c.id = t.category_id
+       LEFT JOIN categories c ON c.id = t.category_id
        WHERE t.type = 'expense' AND t.date >= ? AND t.date <= ?
-       GROUP BY c.id, c.name, c.icon, c.color
+       GROUP BY COALESCE(c.id, t.category_id), COALESCE(c.name, 'Sem categoria'), COALESCE(c.icon, 'Tag'), COALESCE(c.color, '#6B6385')
        HAVING total_cents > 0
        ORDER BY total_cents DESC;`,
       [startDate, endDate]
