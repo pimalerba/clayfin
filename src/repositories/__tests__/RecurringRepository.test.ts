@@ -1,19 +1,20 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 import type * as SQLite from 'expo-sqlite';
 import { migration001Initial } from '@/db/migrations/001_initial';
 import { migration002Recurring } from '@/db/migrations/002_recurring';
-import { RecurringRepository } from '../RecurringRepository';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { DatabaseSync } = require('node:sqlite');
-
-jest.mock('expo-sqlite', () => ({
-  openDatabaseAsync: jest.fn(),
-}));
 
 let idCounter = 0;
 jest.mock('expo-crypto', () => ({
   randomUUID: () => `test-uuid-${++idCounter}`,
 }));
+
+jest.mock('expo-sqlite', () => ({
+  openDatabaseAsync: jest.fn(),
+}));
+
+const { RecurringRepository } = require('../RecurringRepository');
 
 /**
  * Cria uma camada que expõe a interface assíncrona do expo-sqlite v58
