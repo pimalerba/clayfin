@@ -3,6 +3,10 @@ import { Tabs } from 'expo-router';
 import { ClayTabBar } from '@/components/ui';
 import { useAppTheme } from '@/theme';
 
+export const unstable_settings = {
+  anchor: 'index',
+};
+
 export default function TabsLayout() {
   const theme = useAppTheme();
 

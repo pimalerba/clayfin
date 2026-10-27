@@ -3,6 +3,10 @@ import { DynamicColorIOS } from 'react-native';
 import { NativeTabs } from 'expo-router/native-tabs';
 import { hapticTabChange } from '@/utils/haptics';
 
+export const unstable_settings = {
+  anchor: 'index',
+};
+
 /**
  * Layout de abas nativo para iOS (`UITabBarController` via `NativeTabs`).
  * - No iOS 26+, o próprio sistema aplica Liquid Glass à barra de abas e suporta

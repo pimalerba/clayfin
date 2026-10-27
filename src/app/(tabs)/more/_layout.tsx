@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 import { useAppTheme } from '@/theme';
 
 export const unstable_settings = {
-  initialRouteName: 'index',
+  anchor: 'index',
 };
 
 export default function MoreStackLayout() {

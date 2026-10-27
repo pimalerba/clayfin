@@ -65,6 +65,7 @@ export function useDeleteGoal() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
     },
   });
 }
@@ -84,6 +85,7 @@ export function useAddGoalContribution() {
         queryKey: queryKeys.goals.contributions(variables.goal_id),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
     },
   });
 }
@@ -103,6 +105,7 @@ export function useDeleteGoalContribution() {
         queryKey: queryKeys.goals.contributions(variables.goalId),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
     },
   });
 }

@@ -138,12 +138,12 @@ export default function HomeScreen() {
             </Text>
             <Text
               maxFontSizeMultiplier={2.0}
-        adjustsFontSizeToFit
-        minimumFontScale={0.7}
-        numberOfLines={1}
-        accessibilityLabel={`Saldo disponível em conta: ${formatCentsToBRL(
-          summary?.available_account_cents ?? 0
-        )}`}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+              numberOfLines={1}
+              accessibilityLabel={`Receitas do mês: ${formatCentsToBRL(
+                summary?.total_income_cents ?? 0
+              )}`}
               style={[
                 theme.typography.bodySmall,
                 {
@@ -168,19 +168,19 @@ export default function HomeScreen() {
           accessibilityLabel="Adicionar despesa"
           style={styles.quickPill}
         >
-          <ArrowDownCircle size={18} color="#FFC6C2" />
+          <ArrowDownCircle size={18} color="#FFD1D1" />
           <View style={{ marginLeft: 8, flexShrink: 1 }}>
             <Text style={[theme.typography.caption, { color: '#E6DEFF' }]}>
               Despesas
             </Text>
             <Text
               maxFontSizeMultiplier={2.0}
-        adjustsFontSizeToFit
-        minimumFontScale={0.7}
-        numberOfLines={1}
-        accessibilityLabel={`Saldo disponível em conta: ${formatCentsToBRL(
-          summary?.available_account_cents ?? 0
-        )}`}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+              numberOfLines={1}
+              accessibilityLabel={`Despesas do mês: ${formatCentsToBRL(
+                summary?.total_expense_cents ?? 0
+              )}`}
               style={[
                 theme.typography.bodySmall,
                 {
@@ -207,7 +207,7 @@ export default function HomeScreen() {
           Orçamento em Andamento
         </Text>
         <Pressable
-          onPress={() => router.push('/(tabs)/budgets')}
+          onPress={() => router.navigate('/(tabs)/budgets')}
           accessibilityRole="button"
           accessibilityLabel="Ver todos os orçamentos"
           style={styles.seeAllBtn}
@@ -229,7 +229,7 @@ export default function HomeScreen() {
         <ClayCard
           variant="subtle"
           radius="xl"
-          onPress={() => router.push('/(tabs)/budgets')}
+          onPress={() => router.navigate('/(tabs)/budgets')}
           style={{ marginBottom: 18 }}
         >
           <Text
@@ -255,7 +255,7 @@ export default function HomeScreen() {
       ) : (
         <ClayCard
           radius="xl"
-          onPress={() => router.push('/(tabs)/budgets')}
+          onPress={() => router.navigate('/(tabs)/budgets')}
           style={{ marginBottom: 18 }}
         >
           <View style={styles.budgetRowTop}>
@@ -300,7 +300,7 @@ export default function HomeScreen() {
           Meus Cofrinhos
         </Text>
         <Pressable
-          onPress={() => router.push('/(tabs)/more/goals')}
+          onPress={() => router.navigate('/(tabs)/more/goals')}
           accessibilityRole="button"
           accessibilityLabel="Gerenciar metas e cofrinhos"
           style={styles.seeAllBtn}
@@ -441,7 +441,7 @@ export default function HomeScreen() {
           Últimas Transações
         </Text>
         <Pressable
-          onPress={() => router.push('/(tabs)/transactions')}
+          onPress={() => router.navigate('/(tabs)/transactions')}
           accessibilityRole="button"
           accessibilityLabel="Ver histórico completo de transações"
           style={styles.seeAllBtn}

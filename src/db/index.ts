@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 import { runMigrations } from './migrations';
 import { seedDefaultCategories } from './seed';
@@ -18,7 +17,9 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
       let db: SQLite.SQLiteDatabase | null = null;
       try {
         db = await SQLite.openDatabaseAsync(DATABASE_NAME);
+        await db.execAsync('PRAGMA journal_mode = WAL;');
         await db.execAsync('PRAGMA foreign_keys = ON;');
+        await db.execAsync('PRAGMA busy_timeout = 5000;');
         await runMigrations(db);
         await seedDefaultCategories(db);
         return db;
@@ -39,31 +40,18 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
 }
 
 /**
- * Executa uma tarefa assíncrona dentro de uma transação exclusiva isolada.
- * - No iOS e Android nativos, utiliza `withExclusiveTransactionAsync` com a conexão `txn`
- *   dedicada, garantindo isolamento total contra leituras/escritas concorrentes.
- * - Na web ou em mocks onde `withExclusiveTransactionAsync` não estiver disponível,
- *   recorre a `withTransactionAsync` passando `db` como executor.
+ * Executa uma tarefa assíncrona dentro de uma transação SQLite atômica.
+ * Utiliza `withTransactionAsync` na conexão principal com rollback automático em falhas,
+ * garantindo atomicidade e evitando criação de conexões concorrentes que travam o banco
+ * (`database is locked`) no Expo Go.
  */
 export async function runInTransaction<T>(
   db: SQLite.SQLiteDatabase,
   task: (txn: SQLite.SQLiteDatabase) => Promise<T>
 ): Promise<T> {
-  if (
-    Platform.OS === 'web' ||
-    typeof db.withExclusiveTransactionAsync !== 'function'
-  ) {
-    let result: T;
-    await db.withTransactionAsync(async () => {
-      result = await task(db);
-    });
-    return result!;
-  }
-
   let result: T;
-  await db.withExclusiveTransactionAsync(async (txn) => {
-    result = await task(txn as unknown as SQLite.SQLiteDatabase);
+  await db.withTransactionAsync(async () => {
+    result = await task(db);
   });
   return result!;
 }
-
