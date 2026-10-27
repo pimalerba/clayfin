@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -9,7 +9,7 @@ import {
   Sparkles,
 } from 'lucide-react-native';
 import { useAppTheme } from '@/theme';
-import { useCompleteOnboarding } from '@/hooks';
+import { useCompleteOnboarding, useWindowClass } from '@/hooks';
 import { ClayButton, ClayCard } from '@/components/ui';
 
 const SLIDES = [
@@ -38,6 +38,7 @@ const SLIDES = [
 
 export default function OnboardingScreen() {
   const theme = useAppTheme();
+  const { maxFormWidth } = useWindowClass();
   const [stepIndex, setStepIndex] = useState(0);
   const completeMutation = useCompleteOnboarding();
 
@@ -63,7 +64,14 @@ export default function OnboardingScreen() {
     <SafeAreaView
       style={[styles.safe, { backgroundColor: theme.colors.background }]}
     >
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.container,
+          maxFormWidth
+            ? { maxWidth: maxFormWidth, width: '100%', alignSelf: 'center' }
+            : null,
+        ]}
+      >
         <View style={styles.topBar}>
           <View style={styles.brandRow}>
             <PiggyBank size={22} color={theme.colors.primary} />
@@ -88,14 +96,26 @@ export default function OnboardingScreen() {
 
         <View style={styles.centerArea}>
           <ClayCard radius="xxl" padding={28} style={styles.slideCard}>
-            <View
-              style={[
-                styles.iconCircle,
-                { backgroundColor: theme.colors.primaryLight },
-              ]}
-            >
-              <IconComponent size={46} color={theme.colors.primary} />
-            </View>
+            {stepIndex === 0 ? (
+              <View style={styles.logoWrapper}>
+                <Image
+                  source={require('../../assets/images/logo.png')}
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                  accessibilityLabel="Logo do Clayfin"
+                  accessible
+                />
+              </View>
+            ) : (
+              <View
+                style={[
+                  styles.iconCircle,
+                  { backgroundColor: theme.colors.primaryLight },
+                ]}
+              >
+                <IconComponent size={46} color={theme.colors.primary} />
+              </View>
+            )}
 
             <View
               style={[
@@ -192,6 +212,17 @@ const styles = StyleSheet.create({
   slideCard: {
     width: '100%',
     alignItems: 'center',
+  },
+  logoWrapper: {
+    width: 140,
+    height: 140,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+  },
+  logoImage: {
+    width: 140,
+    height: 140,
   },
   iconCircle: {
     width: 96,

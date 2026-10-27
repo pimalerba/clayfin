@@ -82,7 +82,7 @@ Se no futuro surgir um caso que faça sentido (ex.: contagem regressiva para o v
 |---|---|---|
 | `expo-widgets` | Não instalado | Cria target nativo de extensão; não existe no Expo Go (item 2) |
 | `expo-dev-client` | Não instalado | Só faz sentido com development build |
-| Ícone Liquid Glass (`ios.icon: "./assets/expo.icon"`, formato do Icon Composer) | Já configurado no `app.json`, mas **invisível no Expo Go** | O Expo Go usa o próprio ícone; o ícone em camadas do iOS 26 só aparece num build do app |
+| Ícone do app e Splash screen | Configurados no `app.json` (PNG comum no iOS via `icon.png` e adaptive icon no Android), mas **invisíveis no Expo Go** | O ícone e a tela de splash personalizados só aparecem em builds nativos (development build ou produção), nunca no Expo Go (que usa o ícone e splash do próprio cliente Expo). O suporte a ícone em camadas Liquid Glass (`.icon` via Icon Composer, exigindo Mac) fica como melhoria futura |
 | Nome, splash e `userInterfaceStyle` | Configurados, mas no Expo Go vale o comportamento do host | Info.plist/recursos só são gerados no `prebuild` |
 | `expo-hinge`, `onHingeChange`, `ArrangementView` | Não usados (ver item 6) | Exigem build compilado com Xcode/SDK do iOS 27.1+ e aparelho com dobradiça; sem necessidade real no app |
 
@@ -116,6 +116,6 @@ O `app.json` mantém `orientation: "portrait"`. No iOS 27 (janelas redimensioná
 ## 7. Validação que só um build permite
 
 - Comportamento real da tab bar lateral (`sidebarAdaptable`) e do layout de duas colunas **num iPhone Duo físico** com iOS 27.1 (na Etapa A foi validado pelo tamanho da janela).
-- Ícone Liquid Glass na tela inicial, splash e nome do app.
+- Ícone do app na tela inicial, splash screen e nome do app (só aparecem em builds nativos, não no Expo Go; ícone em camadas Liquid Glass via Icon Composer fica como melhoria futura).
 - Trava de orientação no Android vinda do `app.json`/runtime (item 5).
 - Desempenho com Hermes em build de release (o Expo Go roda em modo de desenvolvimento).
