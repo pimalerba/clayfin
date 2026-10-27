@@ -1,5 +1,5 @@
 import { formatCentsToBRL } from './currency';
-import { formatDateIsoToPtBR, formatCentsToDecimal, MonthlyReportExportData, TransactionExportRow } from './exportCsv';
+import { formatDateIsoToPtBR, MonthlyReportExportData, TransactionExportRow } from './exportCsv';
 
 /**
  * Escapa caracteres especiais para evitar XSS e quebra de marcação HTML.
