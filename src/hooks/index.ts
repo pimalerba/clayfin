@@ -8,4 +8,5 @@ export * from './useBackup';
 export * from './useLiquidGlass';
 export * from './useWindowClass';
 export * from './useAccessibilityPreferences';
+export * from './useRecurring';
 

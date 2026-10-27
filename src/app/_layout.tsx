@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
   Platform,
   StyleSheet,
   Text,
@@ -21,6 +22,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AlertTriangle, RotateCcw } from 'lucide-react-native';
 import { getDatabase } from '@/db';
+import { RecurringRepository } from '@/repositories';
+import { queryKeys } from '@/hooks';
+import { getTodayISO } from '@/utils/date';
 import { useLiquidGlass } from '@/hooks/useLiquidGlass';
 import { useAppTheme } from '@/theme';
 import { ClayButton, ClayCard } from '@/components/ui';
@@ -117,6 +121,39 @@ export default function RootLayout() {
       isMounted = false;
     };
   }, []);
+
+  const syncRecurring = useCallback(async () => {
+    try {
+      const today = getTodayISO();
+      const count = await RecurringRepository.generateDue(today);
+      if (count > 0) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+        queryClient.invalidateQueries({ queryKey: queryKeys.budgets.all });
+        queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });
+        queryClient.invalidateQueries({ queryKey: queryKeys.recurring.all });
+      }
+    } catch (err) {
+      console.error('Erro ao processar transações recorrentes devidas:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (dbState !== 'ready') return;
+
+    // Executa ao iniciar o app com banco pronto
+    syncRecurring();
+
+    // Executa quando o app volta ao primeiro plano
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        syncRecurring();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [dbState, syncRecurring]);
 
   const fontsReady = fontsLoaded || Boolean(fontError);
   const isAppReady = fontsReady && dbState === 'ready';

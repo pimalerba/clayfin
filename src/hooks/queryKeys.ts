@@ -25,5 +25,10 @@ export const queryKeys = {
       ['reports', 'expensesByCategory', month] as const,
     cashflow: (endMonth: string) => ['reports', 'cashflow', endMonth] as const,
   },
+  recurring: {
+    all: ['recurring'] as const,
+    list: ['recurring', 'list'] as const,
+    detail: (id: string) => ['recurring', 'detail', id] as const,
+  },
   onboarding: ['onboarding'] as const,
 };
