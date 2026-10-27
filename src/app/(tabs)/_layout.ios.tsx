@@ -2,6 +2,7 @@ import React from 'react';
 import { DynamicColorIOS } from 'react-native';
 import { NativeTabs } from 'expo-router/native-tabs';
 import { hapticTabChange } from '@/utils/haptics';
+import { useAppTheme } from '@/theme';
 
 export const unstable_settings = {
   anchor: 'index',
@@ -16,23 +17,27 @@ export const unstable_settings = {
  * - Na aba `transactions` (que usa `SectionList` abaixo de cabeçalho e filtros fixos),
  *   usamos `disableTransparentOnScrollEdge` conforme a documentação do Expo Router v58
  *   para garantir aparência consistente da borda de rolagem.
+ * - Suporta alternância dinâmica entre modo Claro e Escuro, com blurEffect adaptativo
+ *   e cores dinâmicas via `DynamicColorIOS`.
  */
 export default function TabsLayoutIOS() {
+  const theme = useAppTheme();
+
   const defaultTint = DynamicColorIOS({
-    light: '#6B6385',
-    dark: '#A69EC0',
+    light: '#5C537E',
+    dark: '#B8AFDB',
   });
   const selectedTint = DynamicColorIOS({
-    light: '#7A5AF8',
-    dark: '#9B82FA',
+    light: '#7E61E3',
+    dark: '#9E86F3',
   });
   const selectedLabelTint = DynamicColorIOS({
-    light: '#5936D6',
-    dark: '#B49EFF',
+    light: '#6648CE',
+    dark: '#C4B5FD',
   });
   const barBackground = DynamicColorIOS({
-    light: '#FFFFFF',
-    dark: '#231E34',
+    light: '#FBF9FF',
+    dark: '#1C162E',
   });
 
   return (
@@ -46,7 +51,7 @@ export default function TabsLayoutIOS() {
       }}
       tintColor={selectedTint}
       backgroundColor={barBackground}
-      blurEffect="systemChromeMaterialLight"
+      blurEffect={theme.isDark ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
       iconColor={{
         default: defaultTint,
         selected: selectedTint,

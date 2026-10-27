@@ -61,7 +61,8 @@ export function ClayGlassFallback({
 /**
  * Implementação iOS do `GlassSurface`.
  * Usa `GlassView` nativo do `expo-glass-effect` no iOS 26+ quando a API está disponível,
- * degradando para o visual claymorphism em versões anteriores do iOS.
+ * degradando para o visual claymorphism em versões anteriores do iOS ou quando
+ * o usuário ativa Reduzir Transparência.
  */
 export function GlassSurface({
   children,
@@ -70,12 +71,13 @@ export function GlassSurface({
   interactive = false,
   borderRadius,
   glassStyle = 'regular',
-  colorScheme = 'light',
+  colorScheme,
   ...rest
 }: GlassSurfaceProps) {
   const theme = useAppTheme();
   const isLiquidGlass = useLiquidGlass();
   const resolvedRadius = borderRadius ?? theme.radii.xl;
+  const effectiveColorScheme = colorScheme ?? (theme.isDark ? 'dark' : 'light');
 
   if (!isLiquidGlass) {
     return (
@@ -85,7 +87,7 @@ export function GlassSurface({
         interactive={interactive}
         borderRadius={resolvedRadius}
         glassStyle={glassStyle}
-        colorScheme={colorScheme}
+        colorScheme={effectiveColorScheme}
         {...rest}
       >
         {children}
@@ -98,7 +100,7 @@ export function GlassSurface({
       glassEffectStyle={glassStyle}
       tintColor={tintColor}
       isInteractive={interactive}
-      colorScheme={colorScheme}
+      colorScheme={effectiveColorScheme}
       style={[
         styles.glassView,
         { borderRadius: resolvedRadius },
