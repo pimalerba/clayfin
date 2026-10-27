@@ -188,7 +188,7 @@ export default function CategoryFormScreen() {
         <Text
           style={[
             theme.typography.h1,
-            { color: isLiquidGlass ? '#1E1633' : theme.colors.textPrimary },
+            { color: theme.colors.textPrimary },
           ]}
         >
           {isEditing ? 'Editar Categoria' : 'Nova Categoria'}
@@ -202,11 +202,11 @@ export default function CategoryFormScreen() {
             >
               <GlassSurface
                 interactive
-                tintColor="rgba(122, 90, 248, 0.16)"
+                tintColor={theme.isDark ? "rgba(157, 133, 242, 0.20)" : "rgba(122, 90, 248, 0.16)"}
                 borderRadius={22}
                 style={styles.iconBtn}
               >
-                <X size={22} color="#1E1633" strokeWidth={2.4} />
+                <X size={22} color={theme.colors.textPrimary} strokeWidth={2.4} />
               </GlassSurface>
             </Pressable>
           </GlassContainer>

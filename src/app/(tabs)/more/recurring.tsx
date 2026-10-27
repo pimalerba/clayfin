@@ -434,8 +434,8 @@ export default function RecurringScreen() {
                         theme.typography.h3,
                         {
                           color: isIncome
-                            ? theme.colors.incomeDark
-                            : theme.colors.expenseDark,
+                            ? theme.colors.income
+                            : theme.colors.expense,
                           fontFamily: theme.fontFamilies.extraBold,
                         },
                       ]}
@@ -458,7 +458,7 @@ export default function RecurringScreen() {
                           theme.typography.caption,
                           {
                             color: isActive
-                              ? theme.colors.incomeDark
+                              ? theme.colors.income
                               : theme.colors.textMuted,
                             fontSize: 11,
                             fontFamily: theme.fontFamilies.bold,
@@ -508,7 +508,7 @@ export default function RecurringScreen() {
                       isActive ? (
                         <Pause size={14} color={theme.colors.textPrimary} />
                       ) : (
-                        <Play size={14} color={theme.colors.incomeDark} />
+                        <Play size={14} color={theme.colors.income} />
                       )
                     }
                     onPress={() => handleToggle(rule)}
@@ -566,7 +566,7 @@ export default function RecurringScreen() {
               icon={
                 <ArrowDownCircle
                   size={16}
-                  color={selectedType === 'expense' ? '#FFFFFF' : theme.colors.expenseDark}
+                  color={selectedType === 'expense' ? '#FFFFFF' : theme.colors.expense}
                 />
               }
               onPress={() => setValue('type', 'expense')}
@@ -579,7 +579,7 @@ export default function RecurringScreen() {
               icon={
                 <ArrowUpCircle
                   size={16}
-                  color={selectedType === 'income' ? '#FFFFFF' : theme.colors.incomeDark}
+                  color={selectedType === 'income' ? '#FFFFFF' : theme.colors.income}
                 />
               }
               onPress={() => setValue('type', 'income')}
@@ -637,7 +637,7 @@ export default function RecurringScreen() {
             })}
           </View>
           {errors.category_id ? (
-            <Text style={[styles.fieldError, { color: theme.colors.expenseDark }]}>
+            <Text style={[styles.fieldError, { color: theme.colors.expense }]}>
               {errors.category_id.message}
             </Text>
           ) : null}

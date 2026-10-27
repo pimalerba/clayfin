@@ -126,7 +126,7 @@ export default function OnboardingScreen() {
               <Text
                 style={[
                   theme.typography.caption,
-                  { color: theme.colors.primaryDark },
+                  { color: theme.isDark ? theme.colors.primary : theme.colors.primaryDark },
                 ]}
               >
                 {currentSlide.badge}

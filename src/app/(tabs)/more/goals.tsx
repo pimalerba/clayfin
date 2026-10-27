@@ -81,11 +81,11 @@ export default function GoalsScreen() {
                 >
                   <GlassSurface
                     interactive
-                    tintColor="rgba(122, 90, 248, 0.16)"
+                    tintColor={theme.isDark ? "rgba(157, 133, 242, 0.20)" : "rgba(122, 90, 248, 0.16)"}
                     borderRadius={14}
                     style={styles.backBtn}
                   >
-                    <ArrowLeft size={20} color="#1E1633" strokeWidth={2.4} />
+                    <ArrowLeft size={20} color={theme.colors.textPrimary} strokeWidth={2.4} />
                   </GlassSurface>
                 </Pressable>
               </GlassContainer>
