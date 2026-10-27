@@ -1,4 +1,5 @@
 export type TransactionType = 'income' | 'expense';
+export type RecurringFrequency = 'weekly' | 'monthly' | 'yearly';
 
 export interface Category {
   id: string;
@@ -18,9 +19,32 @@ export interface Transaction {
   description: string | null;
   date: string; // ISO yyyy-MM-dd
   created_at: string;
+  recurring_rule_id?: string | null;
+  occurrence_date?: string | null;
 }
 
 export interface TransactionWithCategory extends Transaction {
+  category_name: string;
+  category_icon: string;
+  category_color: string;
+}
+
+export interface RecurringRule {
+  id: string;
+  category_id: string;
+  type: TransactionType;
+  amount_cents: number;
+  description: string | null;
+  frequency: RecurringFrequency;
+  day_of_month: number | null; // 1-31 (mensal/anual)
+  weekday: number | null; // 0-6 (semanal: 0=domingo, 6=sábado)
+  start_date: string; // yyyy-MM-dd
+  end_date: string | null; // yyyy-MM-dd
+  is_active: number; // 0 ou 1
+  created_at: string;
+}
+
+export interface RecurringRuleWithCategory extends RecurringRule {
   category_name: string;
   category_icon: string;
   category_color: string;

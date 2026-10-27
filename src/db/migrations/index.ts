@@ -1,7 +1,8 @@
 import * as SQLite from 'expo-sqlite';
 import { migration001Initial, Migration } from './001_initial';
+import { migration002Recurring } from './002_recurring';
 
-export const ALL_MIGRATIONS: Migration[] = [migration001Initial];
+export const ALL_MIGRATIONS: Migration[] = [migration001Initial, migration002Recurring];
 
 export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
   await db.execAsync('PRAGMA foreign_keys = ON;');
