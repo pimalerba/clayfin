@@ -86,7 +86,7 @@ Se no futuro surgir um caso que faça sentido (ex.: contagem regressiva para o v
 | Nome, splash e `userInterfaceStyle` | Configurados, mas no Expo Go vale o comportamento do host | Info.plist/recursos só são gerados no `prebuild` |
 | `expo-hinge`, `onHingeChange`, `ArrangementView` | Não usados (ver item 6) | Exigem build compilado com Xcode/SDK do iOS 27.1+ e aparelho com dobradiça; sem necessidade real no app |
 
-Todos os outros módulos usados na Etapa A (`expo-glass-effect`, `@expo/ui` com `DatePicker`, `expo-symbols`, `expo-haptics`, `expo-router/native-tabs`, `react-native-gesture-handler`, `react-native-reanimated`, `expo-sqlite`, `expo-sharing`, `expo-document-picker`) estão incluídos no Expo Go do SDK 58 e foram conferidos no iPhone.
+Todos os outros módulos usados na Etapa A e nas novas funcionalidades (`expo-glass-effect`, `@expo/ui` com `DatePicker`, `expo-symbols`, `expo-haptics`, `expo-router/native-tabs`, `react-native-gesture-handler`, `react-native-reanimated`, `expo-sqlite`, `expo-sharing`, `expo-document-picker`, `expo-print`) estão incluídos no Expo Go do SDK 58 e foram conferidos no iPhone.
 
 ---
 

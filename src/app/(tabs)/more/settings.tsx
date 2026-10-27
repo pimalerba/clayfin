@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Alert,
   Platform,
@@ -16,6 +16,7 @@ import { File, Paths } from 'expo-file-system';
 import {
   ArrowLeft,
   Download,
+  FileSpreadsheet,
   FolderKanban,
   Moon,
   Plus,
@@ -47,10 +48,12 @@ import {
   validateBackupPayload,
 } from '@/utils/backup';
 import { getTodayISO } from '@/utils/date';
+import { ExportModal } from '@/components/ExportModal';
 
 export default function SettingsScreen() {
   const theme = useAppTheme();
   const { preference, setPreference } = useThemePreference();
+  const [exportModalVisible, setExportModalVisible] = useState(false);
   const isLiquidGlass = useLiquidGlass();
   const { maxContentWidth } = useWindowClass();
   const { data: categories = [] } = useCategories();
@@ -415,6 +418,31 @@ export default function SettingsScreen() {
         </ClayCard>
 
         <ClayCard radius="xl" style={styles.sectionCard}>
+          <Text
+            style={[
+              theme.typography.h3,
+              { color: theme.colors.textPrimary, marginBottom: 4 },
+            ]}
+          >
+            Exportar Dados (CSV / PDF)
+          </Text>
+          <Text
+            style={[
+              theme.typography.bodySmall,
+              { color: theme.colors.textSecondary, marginBottom: 14 },
+            ]}
+          >
+            Exporte suas transações em formato de planilha (CSV) para o Excel ou gere relatórios mensais em PDF para impressão.
+          </Text>
+          <ClayButton
+            title="Exportar Transações ou Relatório"
+            variant="secondary"
+            icon={<FileSpreadsheet size={18} color={theme.colors.textPrimary} />}
+            onPress={() => setExportModalVisible(true)}
+          />
+        </ClayCard>
+
+        <ClayCard radius="xl" style={styles.sectionCard}>
           <View style={styles.catHeader}>
             <View style={styles.catTitleRow}>
               <FolderKanban size={20} color={theme.colors.primary} />
@@ -517,6 +545,7 @@ export default function SettingsScreen() {
           />
         </ClayCard>
       </ScrollView>
+      <ExportModal visible={exportModalVisible} onClose={() => setExportModalVisible(false)} />
     </SafeAreaView>
   );
 }

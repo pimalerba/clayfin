@@ -5,3 +5,4 @@ export * from './GoalRepository';
 export * from './ReportRepository';
 export * from './BackupRepository';
 export * from './RecurringRepository';
+export * from './ExportRepository';

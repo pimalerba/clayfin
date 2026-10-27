@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -13,6 +13,7 @@ import { BarChart, PieChart } from 'react-native-gifted-charts';
 import {
   ArrowDownCircle,
   ArrowLeft,
+  Download,
   ArrowUpCircle,
   BarChart3,
   Flame,
@@ -30,6 +31,7 @@ import {
 } from '@/hooks';
 import { useUIStore } from '@/store/useUIStore';
 import {
+  ClayButton,
   ClayCard,
   ClayEmptyState,
   ClayLoadingState,
@@ -38,6 +40,7 @@ import {
 } from '@/components/ui';
 import { MonthSelector } from '@/components/MonthSelector';
 import { formatCentsToBRL } from '@/utils/currency';
+import { ExportModal } from '@/components/ExportModal';
 import { DynamicIcon } from '@/utils/icons';
 
 export default function ReportsScreen() {
@@ -46,6 +49,7 @@ export default function ReportsScreen() {
   const { reduceMotion } = useAccessibilityPreferences();
   const { isRegular, maxContentWidth, columnGap } = useWindowClass();
   const { selectedMonth, setSelectedMonth } = useUIStore();
+  const [exportModalVisible, setExportModalVisible] = useState(false);
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -391,42 +395,52 @@ export default function ReportsScreen() {
           ]}
         >
           <View style={styles.headerRow}>
-            {isLiquidGlass ? (
-              <GlassContainer spacing={8}>
+            <View style={styles.headerLeft}>
+              {isLiquidGlass ? (
+                <GlassContainer spacing={8}>
+                  <Pressable
+                    onPress={handleBack}
+                    accessibilityRole="button"
+                    accessibilityLabel="Voltar para Mais"
+                  >
+                    <GlassSurface
+                      interactive
+                      tintColor={theme.isDark ? 'rgba(157, 133, 242, 0.20)' : 'rgba(122, 90, 248, 0.16)'}
+                      borderRadius={14}
+                      style={styles.backBtn}
+                    >
+                      <ArrowLeft size={20} color={theme.colors.textPrimary} strokeWidth={2.4} />
+                    </GlassSurface>
+                  </Pressable>
+                </GlassContainer>
+              ) : (
                 <Pressable
                   onPress={handleBack}
                   accessibilityRole="button"
                   accessibilityLabel="Voltar para Mais"
+                  style={[
+                    styles.backBtn,
+                    { backgroundColor: theme.colors.surface },
+                  ]}
                 >
-                  <GlassSurface
-                    interactive
-                    tintColor="rgba(122, 90, 248, 0.16)"
-                    borderRadius={14}
-                    style={styles.backBtn}
-                  >
-                    <ArrowLeft size={20} color={theme.colors.textPrimary} strokeWidth={2.4} />
-                  </GlassSurface>
+                  <ArrowLeft size={20} color={theme.colors.textPrimary} />
                 </Pressable>
-              </GlassContainer>
-            ) : (
-              <Pressable
-                onPress={handleBack}
-                accessibilityRole="button"
-                accessibilityLabel="Voltar para Mais"
-                style={[
-                  styles.backBtn,
-                  { backgroundColor: theme.colors.surface },
-                ]}
+              )}
+              <Text
+                accessibilityRole="header"
+                style={[theme.typography.h1, { color: theme.colors.textPrimary, marginLeft: 8 }]}
               >
-                <ArrowLeft size={20} color={theme.colors.textPrimary} />
-              </Pressable>
-            )}
-            <Text
-              accessibilityRole="header"
-              style={[theme.typography.h1, { color: theme.colors.textPrimary }]}
-            >
-              Relatórios
-            </Text>
+                Relatórios
+              </Text>
+            </View>
+
+            <ClayButton
+              title="Exportar"
+              size="sm"
+              variant="secondary"
+              icon={<Download size={15} color={theme.colors.textPrimary} />}
+              onPress={() => setExportModalVisible(true)}
+            />
           </View>
 
           <MonthSelector
@@ -517,6 +531,7 @@ export default function ReportsScreen() {
           </ClayCard>
         </View>
       </ScrollView>
+      <ExportModal visible={exportModalVisible} onClose={() => setExportModalVisible(false)} defaultMonth={selectedMonth} initialType="monthly_report" />
     </SafeAreaView>
   );
 }
@@ -535,9 +550,13 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'space-between',
     marginTop: 8,
     marginBottom: 12,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   backBtn: {
     width: 40,
