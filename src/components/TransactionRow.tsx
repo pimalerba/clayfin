@@ -10,7 +10,7 @@ import {
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { Edit3, Trash2 } from 'lucide-react-native';
+import { Edit3, Repeat, Trash2 } from 'lucide-react-native';
 import { useAppTheme } from '@/theme';
 import { TransactionWithCategory } from '@/types';
 import { formatCentsToBRL } from '@/utils/currency';
@@ -72,7 +72,9 @@ export function TransactionRow({
       style={Platform.OS === 'ios' ? undefined : styles.card}
       accessibilityLabel={`${transaction.category_name}, ${
         transaction.description || ''
-      }, ${isIncome ? 'Receita' : 'Despesa'} de ${formatCentsToBRL(
+      }, ${
+        transaction.recurring_rule_id ? 'Transação recorrente, ' : ''
+      }${isIncome ? 'Receita' : 'Despesa'} de ${formatCentsToBRL(
         transaction.amount_cents
       )}`}
     >
@@ -91,13 +93,27 @@ export function TransactionRow({
         </View>
 
         <View style={styles.infoCol}>
-          <Text
-            numberOfLines={1}
-            maxFontSizeMultiplier={1.8}
-            style={[theme.typography.h3, { color: theme.colors.textPrimary }]}
-          >
-            {transaction.description || transaction.category_name}
-          </Text>
+          <View style={styles.titleRow}>
+            <Text
+              numberOfLines={1}
+              maxFontSizeMultiplier={1.8}
+              style={[
+                theme.typography.h3,
+                { color: theme.colors.textPrimary, flexShrink: 1 },
+              ]}
+            >
+              {transaction.description || transaction.category_name}
+            </Text>
+            {transaction.recurring_rule_id ? (
+              <View
+                style={styles.repeatBadge}
+                accessibilityLabel="Transação recorrente"
+                accessible
+              >
+                <Repeat size={12} color={theme.colors.primary} />
+              </View>
+            ) : null}
+          </View>
           <Text
             numberOfLines={1}
             maxFontSizeMultiplier={1.8}
@@ -221,6 +237,19 @@ const styles = StyleSheet.create({
   infoCol: {
     flex: 1,
     paddingRight: 8,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  repeatBadge: {
+    backgroundColor: 'rgba(122, 90, 248, 0.12)',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   amount: {
     textAlign: 'right',

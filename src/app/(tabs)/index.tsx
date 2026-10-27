@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   Platform,
   Pressable,
@@ -25,6 +25,7 @@ import {
   useGoals,
   useMonthlySummary,
   useOnboardingStatus,
+  useRecurringRules,
   useTransactions,
   useWindowClass,
 } from '@/hooks';
@@ -43,6 +44,9 @@ import {
   calculateGoalProgress,
 } from '@/utils/progress';
 import { DynamicIcon } from '@/utils/icons';
+import { TransactionType } from '@/types';
+import { formatDateShortPtBR, getTodayISO } from '@/utils/date';
+import { computeOccurrences, formatYMD, parseYMD } from '@/utils/recurring';
 
 export default function HomeScreen() {
   const theme = useAppTheme();
@@ -67,7 +71,50 @@ export default function HomeScreen() {
     limit: 5,
   });
   const { data: goals = [] } = useGoals();
+  const { data: recurringRules = [] } = useRecurringRules();
   const deleteTransactionMutation = useDeleteTransaction();
+
+  const upcomingBills = useMemo(() => {
+    const today = getTodayISO();
+    const { year, month, day } = parseYMD(today);
+    const in30DaysDate = new Date(year, month - 1, day + 30, 12, 0, 0);
+    const in30Days = formatYMD(
+      in30DaysDate.getFullYear(),
+      in30DaysDate.getMonth() + 1,
+      in30DaysDate.getDate()
+    );
+
+    const activeRules = recurringRules.filter((r) => r.is_active === 1);
+    const items: {
+      ruleId: string;
+      date: string;
+      type: TransactionType;
+      amount_cents: number;
+      description: string;
+      category_name: string;
+      category_icon: string;
+      category_color: string;
+    }[] = [];
+
+    for (const rule of activeRules) {
+      const dates = computeOccurrences(rule, today, in30Days);
+      for (const d of dates) {
+        items.push({
+          ruleId: rule.id,
+          date: d,
+          type: rule.type,
+          amount_cents: rule.amount_cents,
+          description: rule.description || rule.category_name,
+          category_name: rule.category_name,
+          category_icon: rule.category_icon,
+          category_color: rule.category_color,
+        });
+      }
+    }
+
+    items.sort((a, b) => a.date.localeCompare(b.date));
+    return items.slice(0, 5);
+  }, [recurringRules]);
 
   const totalBudgetLimit = budgets.reduce((acc, b) => acc + b.limit_cents, 0);
   const totalBudgetSpent = budgets.reduce((acc, b) => acc + b.spent_cents, 0);
@@ -195,6 +242,138 @@ export default function HomeScreen() {
         </Pressable>
       </View>
     </ClayCard>
+  );
+
+  const upcomingSection = (
+    <View style={{ marginBottom: 18 }}>
+      <View style={styles.sectionHeader}>
+        <Text
+          accessibilityRole="header"
+          style={[theme.typography.h3, { color: theme.colors.textPrimary }]}
+        >
+          Próximas Contas
+        </Text>
+        <Pressable
+          onPress={() => router.push('/(tabs)/more/recurring' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Ver todas as regras recorrentes"
+          style={styles.seeAllBtn}
+        >
+          <Text
+            style={[theme.typography.caption, { color: theme.colors.primary }]}
+          >
+            Ver regras
+          </Text>
+          <ArrowRight
+            size={14}
+            color={theme.colors.primary}
+            style={{ marginLeft: 4 }}
+          />
+        </Pressable>
+      </View>
+
+      {upcomingBills.length === 0 ? (
+        <ClayCard
+          variant="subtle"
+          radius="xl"
+          onPress={() => router.push('/(tabs)/more/recurring' as any)}
+        >
+          <Text
+            style={[
+              theme.typography.body,
+              {
+                color: theme.colors.textPrimary,
+                fontFamily: theme.fontFamilies.bold,
+              },
+            ]}
+          >
+            Nenhuma conta nos próximos 30 dias
+          </Text>
+          <Text
+            style={[
+              theme.typography.bodySmall,
+              { color: theme.colors.textSecondary, marginTop: 2 },
+            ]}
+          >
+            Cadastre despesas e receitas fixas para acompanhar previsões.
+          </Text>
+        </ClayCard>
+      ) : (
+        <ClayCard radius="xl" style={{ padding: 12 }}>
+          {upcomingBills.map((bill, index) => {
+            const isIncome = bill.type === 'income';
+            return (
+              <View
+                key={`${bill.ruleId}_${bill.date}_${index}`}
+                style={[
+                  styles.upcomingRow,
+                  index > 0
+                    ? {
+                        borderTopWidth: StyleSheet.hairlineWidth,
+                        borderTopColor: 'rgba(0,0,0,0.06)',
+                        paddingTop: 10,
+                        marginTop: 10,
+                      }
+                    : null,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.goalMiniIcon,
+                    { backgroundColor: `${bill.category_color}24` },
+                  ]}
+                >
+                  <DynamicIcon
+                    name={bill.category_icon}
+                    size={18}
+                    color={bill.category_color}
+                  />
+                </View>
+
+                <View style={{ flex: 1, paddingRight: 8 }}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      theme.typography.body,
+                      {
+                        color: theme.colors.textPrimary,
+                        fontFamily: theme.fontFamilies.bold,
+                      },
+                    ]}
+                  >
+                    {bill.description}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      theme.typography.caption,
+                      { color: theme.colors.textSecondary },
+                    ]}
+                  >
+                    {bill.category_name} • {formatDateShortPtBR(bill.date)}
+                  </Text>
+                </View>
+
+                <Text
+                  style={[
+                    theme.typography.body,
+                    {
+                      color: isIncome
+                        ? theme.colors.incomeDark
+                        : theme.colors.expenseDark,
+                      fontFamily: theme.fontFamilies.extraBold,
+                    },
+                  ]}
+                >
+                  {isIncome ? '+ ' : '- '}
+                  {formatCentsToBRL(bill.amount_cents)}
+                </Text>
+              </View>
+            );
+          })}
+        </ClayCard>
+      )}
+    </View>
   );
 
   const budgetSection = (
@@ -549,6 +728,7 @@ export default function HomeScreen() {
             <View style={[styles.regularColumnsRow, { gap: columnGap }]}>
               <View style={styles.regularColumn}>
                 {heroSection}
+                {upcomingSection}
                 {budgetSection}
               </View>
               <View style={styles.regularColumn}>
@@ -559,6 +739,7 @@ export default function HomeScreen() {
           ) : (
             <>
               {heroSection}
+              {upcomingSection}
               {budgetSection}
               {goalsSection}
               {recentTransactionsSection}
@@ -582,6 +763,10 @@ const styles = StyleSheet.create({
   },
   contentWrapper: {
     width: '100%',
+  },
+  upcomingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   topHeader: {
     flexDirection: 'row',

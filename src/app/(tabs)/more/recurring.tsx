@@ -19,7 +19,6 @@ import {
   ArrowLeft,
   ArrowUpCircle,
   Calendar,
-  CheckCircle2,
   Edit3,
   FileText,
   Pause,
@@ -55,7 +54,6 @@ import {
 import {
   RecurringFrequency,
   RecurringRuleWithCategory,
-  TransactionType,
 } from '@/types';
 import { formatCentsToBRL } from '@/utils/currency';
 import { formatDateShortPtBR, getTodayISO } from '@/utils/date';
@@ -131,7 +129,6 @@ export default function RecurringScreen() {
   const selectedType = watch('type');
   const selectedCategoryId = watch('category_id');
   const selectedFrequency = watch('frequency');
-  const selectedStartDate = watch('start_date');
 
   const filteredCategories = useMemo(
     () => allCategories.filter((c) => c.type === selectedType),

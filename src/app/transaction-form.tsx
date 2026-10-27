@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Platform,
@@ -16,6 +16,7 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   FileText,
+  Repeat,
   Trash2,
   X,
 } from 'lucide-react-native';
@@ -23,10 +24,13 @@ import { useAppTheme } from '@/theme';
 import {
   useBudgets,
   useCategories,
+  useCreateRecurringWithFirstOccurrence,
   useCreateTransaction,
   useDeleteTransaction,
   useLiquidGlass,
+  useRecurringRuleDetail,
   useTransactionDetail,
+  useUpdateRecurringRule,
   useUpdateTransaction,
   useWindowClass,
 } from '@/hooks';
@@ -44,6 +48,7 @@ import {
   transactionFormSchema,
 } from '@/features/schemas';
 import { getTodayISO } from '@/utils/date';
+import { getWeekdayYMD, parseYMD } from '@/utils/recurring';
 import {
   hapticBudgetExceeded,
   hapticTransactionSaved,
@@ -58,10 +63,21 @@ export default function TransactionFormScreen() {
   const isEditing = Boolean(params.id);
 
   const { data: existingTx } = useTransactionDetail(params.id);
+  const { data: existingRule } = useRecurringRuleDetail(
+    existingTx?.recurring_rule_id ?? undefined
+  );
   const { data: allCategories = [] } = useCategories();
   const createMutation = useCreateTransaction();
   const updateMutation = useUpdateTransaction();
   const deleteMutation = useDeleteTransaction();
+  const createRecurringWithFirstOccurrence =
+    useCreateRecurringWithFirstOccurrence();
+  const updateRecurringRuleMutation = useUpdateRecurringRule();
+
+  const [repeatFrequency, setRepeatFrequency] = useState<
+    'never' | 'weekly' | 'monthly' | 'yearly'
+  >('never');
+  const [repeatEndDate, setRepeatEndDate] = useState<string>('');
 
   const {
     control,
@@ -91,7 +107,9 @@ export default function TransactionFormScreen() {
     isSubmitting ||
     createMutation.isPending ||
     updateMutation.isPending ||
-    deleteMutation.isPending;
+    deleteMutation.isPending ||
+    createRecurringWithFirstOccurrence.isPending ||
+    updateRecurringRuleMutation.isPending;
 
   const filteredCategories = useMemo(
     () => allCategories.filter((c) => c.type === selectedType),
@@ -122,44 +140,110 @@ export default function TransactionFormScreen() {
     }
   }, [filteredCategories, selectedCategoryId, setValue]);
 
+  const executeSave = async (
+    values: TransactionFormData,
+    scope: 'single' | 'future' = 'single'
+  ) => {
+    const matchingBudget =
+      values.type === 'expense'
+        ? monthBudgets.find((b) => b.category_id === values.category_id)
+        : undefined;
+    const previousExpenseInSameBudget =
+      isEditing &&
+      existingTx &&
+      existingTx.type === 'expense' &&
+      existingTx.category_id === values.category_id &&
+      existingTx.date.slice(0, 7) === values.date.slice(0, 7)
+        ? existingTx.amount_cents
+        : 0;
+    const willExceedBudget =
+      matchingBudget != null &&
+      matchingBudget.limit_cents > 0 &&
+      matchingBudget.spent_cents -
+        previousExpenseInSameBudget +
+        values.amount_cents >=
+        matchingBudget.limit_cents;
+
+    if (isEditing && params.id) {
+      await updateMutation.mutateAsync({
+        id: params.id,
+        ...values,
+      });
+
+      if (scope === 'future' && existingTx?.recurring_rule_id && existingRule) {
+        await updateRecurringRuleMutation.mutateAsync({
+          id: existingRule.id,
+          category_id: values.category_id,
+          type: values.type,
+          amount_cents: values.amount_cents,
+          description: values.description?.trim() || null,
+          frequency: existingRule.frequency,
+          day_of_month: existingRule.day_of_month,
+          weekday: existingRule.weekday,
+          start_date: existingRule.start_date,
+          end_date: existingRule.end_date,
+          is_active: existingRule.is_active,
+        });
+      }
+    } else {
+      if (repeatFrequency === 'never') {
+        await createMutation.mutateAsync(values);
+      } else {
+        const parsedDate = parseYMD(values.date);
+        const dayOfMonth =
+          repeatFrequency === 'weekly' ? null : parsedDate.day;
+        const weekday =
+          repeatFrequency === 'weekly' ? getWeekdayYMD(values.date) : null;
+
+        await createRecurringWithFirstOccurrence.mutateAsync({
+          input: {
+            category_id: values.category_id,
+            type: values.type,
+            amount_cents: values.amount_cents,
+            description: values.description?.trim() || null,
+            frequency: repeatFrequency,
+            day_of_month: dayOfMonth,
+            weekday,
+            start_date: values.date,
+            end_date: repeatEndDate.trim() || null,
+            is_active: 1,
+          },
+          firstOccurrenceDate: values.date,
+        });
+      }
+    }
+
+    if (willExceedBudget) {
+      hapticBudgetExceeded();
+    } else {
+      hapticTransactionSaved();
+    }
+
+    router.back();
+  };
+
   const onSubmit = async (values: TransactionFormData) => {
     try {
-      const matchingBudget =
-        values.type === 'expense'
-          ? monthBudgets.find((b) => b.category_id === values.category_id)
-          : undefined;
-      const previousExpenseInSameBudget =
-        isEditing &&
-        existingTx &&
-        existingTx.type === 'expense' &&
-        existingTx.category_id === values.category_id &&
-        existingTx.date.slice(0, 7) === values.date.slice(0, 7)
-          ? existingTx.amount_cents
-          : 0;
-      const willExceedBudget =
-        matchingBudget != null &&
-        matchingBudget.limit_cents > 0 &&
-        matchingBudget.spent_cents -
-          previousExpenseInSameBudget +
-          values.amount_cents >=
-          matchingBudget.limit_cents;
-
-      if (isEditing && params.id) {
-        await updateMutation.mutateAsync({
-          id: params.id,
-          ...values,
-        });
-      } else {
-        await createMutation.mutateAsync(values);
+      if (isEditing && existingTx?.recurring_rule_id) {
+        Alert.alert(
+          'Transação Recorrente',
+          'Esta transação faz parte de uma recorrência. Deseja aplicar as alterações a:',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Só esta',
+              onPress: () => executeSave(values, 'single'),
+            },
+            {
+              text: 'Esta e as futuras',
+              onPress: () => executeSave(values, 'future'),
+            },
+          ]
+        );
+        return;
       }
 
-      if (willExceedBudget) {
-        hapticBudgetExceeded();
-      } else {
-        hapticTransactionSaved();
-      }
-
-      router.back();
+      await executeSave(values, 'single');
     } catch (err: any) {
       Alert.alert(
         'Erro ao salvar',
@@ -389,6 +473,65 @@ export default function TransactionFormScreen() {
               />
             )}
           />
+
+          {!isEditing ? (
+            <>
+              <Text
+                style={[
+                  theme.typography.bodySmall,
+                  styles.sectionLabel,
+                  { color: theme.colors.textSecondary, marginTop: 12 },
+                ]}
+              >
+                Repetir
+              </Text>
+              <View style={styles.repeatToggleRow}>
+                {(['never', 'weekly', 'monthly', 'yearly'] as const).map(
+                  (freq) => {
+                    const label =
+                      freq === 'never'
+                        ? 'Nunca'
+                        : freq === 'weekly'
+                        ? 'Semanal'
+                        : freq === 'monthly'
+                        ? 'Mensal'
+                        : 'Anual';
+                    const isSelected = repeatFrequency === freq;
+                    return (
+                      <ClayChip
+                        key={freq}
+                        label={label}
+                        selected={isSelected}
+                        accentColor={theme.colors.primary}
+                        icon={
+                          freq !== 'never' ? (
+                            <Repeat
+                              size={14}
+                              color={
+                                isSelected ? '#FFFFFF' : theme.colors.primary
+                              }
+                            />
+                          ) : undefined
+                        }
+                        onPress={() => setRepeatFrequency(freq)}
+                        style={styles.repeatChip}
+                      />
+                    );
+                  }
+                )}
+              </View>
+
+              {repeatFrequency !== 'never' ? (
+                <View style={{ marginTop: 10 }}>
+                  <NativeDateField
+                    label="Repetir até (opcional)"
+                    value={repeatEndDate}
+                    onChange={setRepeatEndDate}
+                  />
+                </View>
+              ) : null}
+            </>
+          ) : null}
         </ClayCard>
 
         <View style={styles.actionsBlock}>
@@ -468,6 +611,14 @@ const styles = StyleSheet.create({
   },
   categoryChip: {
     marginBottom: 4,
+  },
+  repeatToggleRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 4,
+  },
+  repeatChip: {
+    flex: 1,
   },
   actionsBlock: {
     marginTop: 4,
