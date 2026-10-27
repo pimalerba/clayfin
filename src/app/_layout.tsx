@@ -26,7 +26,11 @@ import { RecurringRepository } from '@/repositories';
 import { queryKeys } from '@/hooks';
 import { getTodayISO } from '@/utils/date';
 import { useLiquidGlass } from '@/hooks/useLiquidGlass';
-import { useAppTheme } from '@/theme';
+import {
+  ThemePreferenceProvider,
+  useAppTheme,
+  useThemePreference,
+} from '@/theme';
 import { ClayButton, ClayCard } from '@/components/ui';
 
 export const unstable_settings = {
@@ -46,8 +50,9 @@ const queryClient = new QueryClient({
 
 type DbState = 'loading' | 'ready' | 'error';
 
-export default function RootLayout() {
+function RootLayoutInner() {
   const theme = useAppTheme();
+  const { isReady: isThemeReady } = useThemePreference();
   const isLiquidGlass = useLiquidGlass();
   const [dbState, setDbState] = useState<DbState>('loading');
   const [dbErrorMessage, setDbErrorMessage] = useState<string | null>(null);
@@ -156,16 +161,16 @@ export default function RootLayout() {
   }, [dbState, syncRecurring]);
 
   const fontsReady = fontsLoaded || Boolean(fontError);
-  const isAppReady = fontsReady && dbState === 'ready';
+  const isAppReady = fontsReady && dbState === 'ready' && isThemeReady;
 
   const navigationTheme = useMemo<Theme>(
     () => ({
       ...DefaultTheme,
-      dark: false,
+      dark: theme.isDark,
       colors: {
         ...DefaultTheme.colors,
         primary: theme.colors.primary,
-        background: '#F2EFFA',
+        background: theme.colors.background,
         card: theme.colors.surface,
         text: theme.colors.textPrimary,
         border: theme.colors.border,
@@ -189,7 +194,7 @@ export default function RootLayout() {
           { backgroundColor: theme.colors.background, padding: 24 },
         ]}
       >
-        <StatusBar style="dark" />
+        <StatusBar style={theme.isDark ? 'light' : 'dark'} />
         <ClayCard radius="xl" style={styles.errorCard}>
           <View
             style={[
@@ -251,6 +256,7 @@ export default function RootLayout() {
           { backgroundColor: theme.colors.background },
         ]}
       >
+        <StatusBar style={theme.isDark ? 'light' : 'dark'} />
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
@@ -261,7 +267,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider value={navigationTheme}>
-            <StatusBar style="dark" />
+            <StatusBar style={theme.isDark ? 'light' : 'dark'} />
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -299,6 +305,14 @@ export default function RootLayout() {
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ThemePreferenceProvider>
+      <RootLayoutInner />
+    </ThemePreferenceProvider>
   );
 }
 

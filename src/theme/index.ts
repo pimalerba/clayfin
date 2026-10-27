@@ -128,9 +128,12 @@ export const darkTheme: AppTheme = {
   isDark: true,
 };
 
-export function useAppTheme(): AppTheme {
-  return lightTheme;
-}
+export {
+  ThemePreferenceProvider,
+  useAppTheme,
+  useThemePreference,
+  type ThemePreference,
+} from './ThemeContext';
 
 export { lightColors, darkColors, CATEGORY_PRESET_COLORS };
 export type { ThemeColors };
