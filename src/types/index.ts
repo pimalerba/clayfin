@@ -129,5 +129,6 @@ export interface ClayfinBackupPayload {
     budgets: Budget[];
     goals: Goal[];
     goal_contributions: GoalContribution[];
+    recurring_rules?: RecurringRule[];
   };
 }

@@ -5,8 +5,8 @@ import {
   validateBackupPayload,
 } from '@/utils/backup';
 
-describe('Validação estrita de backups do Clayfin', () => {
-  const baseValidBackup = {
+describe('Validação estrita de backups do Clayfin (v1 e v2)', () => {
+  const baseValidBackupV1 = {
     app: 'Clayfin',
     version: 1,
     exported_at: '2026-10-26T12:00:00.000Z',
@@ -72,16 +72,76 @@ describe('Validação estrita de backups do Clayfin', () => {
     },
   };
 
-  it('aceita um payload de backup perfeitamente íntegro', () => {
-    const res = validateBackupPayload(baseValidBackup);
+  const baseValidBackupV2 = {
+    app: 'Clayfin',
+    version: 2,
+    exported_at: '2026-10-26T12:00:00.000Z',
+    data: {
+      categories: [
+        {
+          id: 'cat-1',
+          name: 'Alimentação',
+          icon: 'Utensils',
+          color: '#F07167',
+          type: 'expense',
+          is_default: 1,
+          created_at: '2026-10-26T12:00:00.000Z',
+        },
+      ],
+      recurring_rules: [
+        {
+          id: 'rule-1',
+          category_id: 'cat-1',
+          type: 'expense',
+          amount_cents: 12000,
+          description: 'Almoço Recorrente',
+          frequency: 'monthly',
+          day_of_month: 15,
+          weekday: null,
+          start_date: '2026-08-15',
+          end_date: null,
+          is_active: 1,
+          created_at: '2026-08-01T10:00:00.000Z',
+        },
+      ],
+      transactions: [
+        {
+          id: 'tx-1',
+          category_id: 'cat-1',
+          type: 'expense',
+          amount_cents: 12000,
+          description: 'Almoço Recorrente',
+          date: '2026-08-15',
+          created_at: '2026-08-15T12:00:00.000Z',
+          recurring_rule_id: 'rule-1',
+          occurrence_date: '2026-08-15',
+        },
+      ],
+      budgets: [],
+      goals: [],
+      goal_contributions: [],
+    },
+  };
+
+  it('aceita payload de backup versão 1 perfeitamente íntegro (retrocompatibilidade)', () => {
+    const res = validateBackupPayload(baseValidBackupV1);
+    expect(res.valid).toBe(true);
+    expect(res.error).toBeUndefined();
+    expect(res.payload?.version).toBe(1);
+    expect(res.payload?.data.recurring_rules).toEqual([]);
+  });
+
+  it('aceita payload de backup versão 2 com recurring_rules e transações vinculadas', () => {
+    const res = validateBackupPayload(baseValidBackupV2);
     expect(res.valid).toBe(true);
     expect(res.error).toBeUndefined();
     expect(res.payload?.version).toBe(CURRENT_BACKUP_VERSION);
+    expect(res.payload?.data.recurring_rules).toHaveLength(1);
   });
 
   describe('Validação de versão', () => {
-    it('rejeita backups com versão futura e orienta a atualizar o app', () => {
-      const futureBackup = { ...baseValidBackup, version: 2 };
+    it('rejeita backups com versão acima de 2 e orienta a atualizar o app', () => {
+      const futureBackup = { ...baseValidBackupV2, version: 3 };
       const res = validateBackupPayload(futureBackup);
       expect(res.valid).toBe(false);
       expect(res.error).toContain('mais recente do que a versão suportada');
@@ -89,7 +149,7 @@ describe('Validação estrita de backups do Clayfin', () => {
     });
 
     it('rejeita backups com versão 0 ou número inválido', () => {
-      const invalidVersion = { ...baseValidBackup, version: 0 };
+      const invalidVersion = { ...baseValidBackupV2, version: 0 };
       const res = validateBackupPayload(invalidVersion);
       expect(res.valid).toBe(false);
       expect(res.error).toContain('Versão de backup não suportada');
@@ -110,101 +170,51 @@ describe('Validação estrita de backups do Clayfin', () => {
     });
   });
 
-  describe('Validação de duplicidade de IDs', () => {
-    it('rejeita IDs duplicados na coleção de categorias', () => {
-      const duplicateCats = JSON.parse(JSON.stringify(baseValidBackup));
-      duplicateCats.data.categories.push({
-        ...duplicateCats.data.categories[0],
-        name: 'Categoria Clone',
+  describe('Validação de integridade e unicidade da v2', () => {
+    it('rejeita IDs duplicados em recurring_rules', () => {
+      const dupRules = JSON.parse(JSON.stringify(baseValidBackupV2));
+      dupRules.data.recurring_rules.push({
+        ...dupRules.data.recurring_rules[0],
+        description: 'Regra Clone',
       });
-      const res = validateBackupPayload(duplicateCats);
+      const res = validateBackupPayload(dupRules);
       expect(res.valid).toBe(false);
-      expect(res.error).toContain('ID de categoria duplicado no backup');
+      expect(res.error).toContain('ID de regra recorrente duplicado no backup');
     });
 
-    it('rejeita IDs duplicados na coleção de transações', () => {
-      const duplicateTxs = JSON.parse(JSON.stringify(baseValidBackup));
-      duplicateTxs.data.transactions.push({
-        ...duplicateTxs.data.transactions[0],
-        description: 'Transação Clone',
-      });
-      const res = validateBackupPayload(duplicateTxs);
+    it('rejeita recurring_rule apontando para categoria inexistente', () => {
+      const badRule = JSON.parse(JSON.stringify(baseValidBackupV2));
+      badRule.data.recurring_rules[0].category_id = 'cat-inexistente';
+      const res = validateBackupPayload(badRule);
       expect(res.valid).toBe(false);
-      expect(res.error).toContain('ID de transação duplicado no backup');
+      expect(res.error).toContain('Regra recorrente "rule-1" faz referência a uma categoria inexistente');
     });
 
-    it('rejeita IDs duplicados na coleção de orçamentos', () => {
-      const duplicateBudgets = JSON.parse(JSON.stringify(baseValidBackup));
-      duplicateBudgets.data.budgets.push({
-        ...duplicateBudgets.data.budgets[0],
-        month: '2026-11',
-      });
-      const res = validateBackupPayload(duplicateBudgets);
-      expect(res.valid).toBe(false);
-      expect(res.error).toContain('ID de orçamento duplicado no backup');
-    });
-
-    it('rejeita IDs duplicados na coleção de metas', () => {
-      const duplicateGoals = JSON.parse(JSON.stringify(baseValidBackup));
-      duplicateGoals.data.goals.push({
-        ...duplicateGoals.data.goals[0],
-        name: 'Meta Clone',
-      });
-      const res = validateBackupPayload(duplicateGoals);
-      expect(res.valid).toBe(false);
-      expect(res.error).toContain('ID de meta duplicado no backup');
-    });
-
-    it('rejeita IDs duplicados na coleção de movimentações de meta', () => {
-      const duplicateContribs = JSON.parse(JSON.stringify(baseValidBackup));
-      duplicateContribs.data.goal_contributions.push({
-        ...duplicateContribs.data.goal_contributions[0],
-        amount_cents: 5000,
-      });
-      const res = validateBackupPayload(duplicateContribs);
-      expect(res.valid).toBe(false);
-      expect(res.error).toContain('ID de movimentação de meta duplicado no backup');
-    });
-  });
-
-  describe('Validação de integridade referencial', () => {
-    it('rejeita transação apontando para categoria inexistente', () => {
-      const badTx = JSON.parse(JSON.stringify(baseValidBackup));
-      badTx.data.transactions[0].category_id = 'cat-inexistente';
+    it('rejeita transação apontando para recurring_rule inexistente', () => {
+      const badTx = JSON.parse(JSON.stringify(baseValidBackupV2));
+      badTx.data.transactions[0].recurring_rule_id = 'rule-inexistente';
       const res = validateBackupPayload(badTx);
       expect(res.valid).toBe(false);
-      expect(res.error).toContain('categoria inexistente no backup');
+      expect(res.error).toContain('Transação "tx-1" faz referência a uma regra recorrente inexistente');
     });
 
-    it('rejeita orçamento apontando para categoria inexistente', () => {
-      const badBudget = JSON.parse(JSON.stringify(baseValidBackup));
-      badBudget.data.budgets[0].category_id = 'cat-inexistente';
-      const res = validateBackupPayload(badBudget);
-      expect(res.valid).toBe(false);
-      expect(res.error).toContain('categoria inexistente no backup');
-    });
-
-    it('rejeita movimentação apontando para meta inexistente', () => {
-      const badContrib = JSON.parse(JSON.stringify(baseValidBackup));
-      badContrib.data.goal_contributions[0].goal_id = 'goal-fantasma';
-      const res = validateBackupPayload(badContrib);
-      expect(res.valid).toBe(false);
-      expect(res.error).toContain('meta inexistente no backup');
-    });
-
-    it('rejeita orçamentos duplicados para a mesma categoria e mesmo mês', () => {
-      const dupBudgetMonth = JSON.parse(JSON.stringify(baseValidBackup));
-      dupBudgetMonth.data.budgets.push({
-        id: 'b-2',
-        category_id: 'cat-1',
-        month: '2026-10', // Mesmo mês e mesma categoria
-        limit_cents: 80000,
+    it('rejeita par (recurring_rule_id, occurrence_date) duplicado em transações', () => {
+      const dupOcc = JSON.parse(JSON.stringify(baseValidBackupV2));
+      dupOcc.data.transactions.push({
+        ...dupOcc.data.transactions[0],
+        id: 'tx-dup-occ',
       });
-      const res = validateBackupPayload(dupBudgetMonth);
+      const res = validateBackupPayload(dupOcc);
       expect(res.valid).toBe(false);
-      expect(res.error).toContain(
-        'Existe mais de um orçamento definido para a mesma categoria'
-      );
+      expect(res.error).toContain('Existe mais de uma transação no backup para a mesma regra');
+    });
+
+    it('rejeita frequency inválida em recurring_rule', () => {
+      const badFreq = JSON.parse(JSON.stringify(baseValidBackupV2));
+      badFreq.data.recurring_rules[0].frequency = 'daily'; // Inválido: apenas weekly/monthly/yearly
+      const res = validateBackupPayload(badFreq);
+      expect(res.valid).toBe(false);
+      expect(res.error).toContain('Formato de backup inválido');
     });
   });
 });

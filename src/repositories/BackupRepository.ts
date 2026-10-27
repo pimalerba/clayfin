@@ -6,6 +6,7 @@ import {
   ClayfinBackupPayload,
   Goal,
   GoalContribution,
+  RecurringRule,
   Transaction,
 } from '@/types';
 
@@ -22,23 +23,31 @@ export interface IBackupRepository {
 export const BackupRepository: IBackupRepository = {
   async exportBackupData(): Promise<ClayfinBackupPayload> {
     const db = await getDatabase();
-    const [categories, transactions, budgets, goals, goal_contributions] =
-      await Promise.all([
-        db.getAllAsync<Category>(`SELECT * FROM categories ORDER BY created_at ASC;`),
-        db.getAllAsync<Transaction>(`SELECT * FROM transactions ORDER BY date ASC;`),
-        db.getAllAsync<Budget>(`SELECT * FROM budgets ORDER BY month ASC;`),
-        db.getAllAsync<Goal>(`SELECT * FROM goals ORDER BY created_at ASC;`),
-        db.getAllAsync<GoalContribution>(
-          `SELECT * FROM goal_contributions ORDER BY date ASC;`
-        ),
-      ]);
+    const [
+      categories,
+      recurring_rules,
+      transactions,
+      budgets,
+      goals,
+      goal_contributions,
+    ] = await Promise.all([
+      db.getAllAsync<Category>(`SELECT * FROM categories ORDER BY created_at ASC;`),
+      db.getAllAsync<RecurringRule>(`SELECT * FROM recurring_rules ORDER BY created_at ASC;`),
+      db.getAllAsync<Transaction>(`SELECT * FROM transactions ORDER BY date ASC;`),
+      db.getAllAsync<Budget>(`SELECT * FROM budgets ORDER BY month ASC;`),
+      db.getAllAsync<Goal>(`SELECT * FROM goals ORDER BY created_at ASC;`),
+      db.getAllAsync<GoalContribution>(
+        `SELECT * FROM goal_contributions ORDER BY date ASC;`
+      ),
+    ]);
 
     return {
       app: 'Clayfin',
-      version: 1,
+      version: 2,
       exported_at: new Date().toISOString(),
       data: {
         categories,
+        recurring_rules,
         transactions,
         budgets,
         goals,
@@ -56,6 +65,7 @@ export const BackupRepository: IBackupRepository = {
         DELETE FROM goals;
         DELETE FROM budgets;
         DELETE FROM transactions;
+        DELETE FROM recurring_rules;
         DELETE FROM categories;
       `);
 
@@ -75,10 +85,35 @@ export const BackupRepository: IBackupRepository = {
         );
       }
 
+      if (payload.data.recurring_rules && payload.data.recurring_rules.length > 0) {
+        for (const rule of payload.data.recurring_rules) {
+          await txn.runAsync(
+            `INSERT INTO recurring_rules (
+              id, category_id, type, amount_cents, description, frequency, day_of_month, weekday, start_date, end_date, is_active, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+            [
+              rule.id,
+              rule.category_id,
+              rule.type,
+              Math.trunc(rule.amount_cents),
+              rule.description ?? null,
+              rule.frequency,
+              rule.day_of_month ?? null,
+              rule.weekday ?? null,
+              rule.start_date,
+              rule.end_date ?? null,
+              rule.is_active ? 1 : 0,
+              rule.created_at,
+            ]
+          );
+        }
+      }
+
       for (const tx of payload.data.transactions) {
         await txn.runAsync(
-          `INSERT INTO transactions (id, category_id, type, amount_cents, description, date, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?);`,
+          `INSERT INTO transactions (
+            id, category_id, type, amount_cents, description, date, created_at, recurring_rule_id, occurrence_date
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
           [
             tx.id,
             tx.category_id,
@@ -87,6 +122,8 @@ export const BackupRepository: IBackupRepository = {
             tx.description ?? null,
             tx.date,
             tx.created_at,
+            tx.recurring_rule_id ?? null,
+            tx.occurrence_date ?? null,
           ]
         );
       }
@@ -141,6 +178,7 @@ export const BackupRepository: IBackupRepository = {
         DELETE FROM goals;
         DELETE FROM budgets;
         DELETE FROM transactions;
+        DELETE FROM recurring_rules;
         DELETE FROM categories;
       `);
       await seedDefaultCategories(txn, { inTransaction: true });
