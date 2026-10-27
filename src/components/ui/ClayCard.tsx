@@ -52,16 +52,16 @@ export function ClayCard({
   const getGradientColors = (): readonly [string, string] => {
     switch (variant) {
       case 'primary':
-        return ['#9980F2', '#7E61E3'];
+        return theme.colors.cardGradientPrimary;
       case 'income':
-        return ['#E6FAF0', '#D2F3E3'];
+        return theme.colors.cardGradientIncome;
       case 'expense':
-        return ['#FFECEA', '#FFE0DC'];
+        return theme.colors.cardGradientExpense;
       case 'subtle':
-        return ['#F6F3FC', '#ECE7F8'];
+        return theme.colors.cardGradientSubtle;
       case 'default':
       default:
-        return ['#FFFFFF', '#F7F4FD'];
+        return theme.colors.cardGradientDefault;
     }
   };
 
@@ -71,8 +71,12 @@ export function ClayCard({
   } => {
     if (variant === 'primary') {
       return {
-        topHighlight: 'rgba(255, 255, 255, 0.34)',
-        bottomShade: 'rgba(65, 42, 148, 0.32)',
+        topHighlight: theme.isDark
+          ? 'rgba(255, 255, 255, 0.22)'
+          : 'rgba(255, 255, 255, 0.34)',
+        bottomShade: theme.isDark
+          ? 'rgba(0, 0, 0, 0.45)'
+          : 'rgba(65, 42, 148, 0.32)',
       };
     }
     return {

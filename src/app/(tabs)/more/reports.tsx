@@ -81,7 +81,7 @@ export default function ReportsScreen() {
         spacing: 4,
         labelWidth: 36,
         labelTextStyle: {
-          color: theme.colors.textSecondary,
+          color: theme.colors.chartLabel,
           fontSize: 11,
           fontFamily: theme.fontFamilies.bold,
         },
@@ -355,7 +355,7 @@ export default function ReportsScreen() {
                     style={[
                       theme.typography.caption,
                       {
-                        color: theme.colors.textSecondary,
+                        color: theme.colors.chartLabel,
                         marginLeft: 8,
                         minWidth: 42,
                         textAlign: 'right',
@@ -404,7 +404,7 @@ export default function ReportsScreen() {
                     borderRadius={14}
                     style={styles.backBtn}
                   >
-                    <ArrowLeft size={20} color="#1E1633" strokeWidth={2.4} />
+                    <ArrowLeft size={20} color={theme.colors.textPrimary} strokeWidth={2.4} />
                   </GlassSurface>
                 </Pressable>
               </GlassContainer>
@@ -505,7 +505,7 @@ export default function ReportsScreen() {
                   xAxisThickness={0}
                   yAxisThickness={0}
                   yAxisTextStyle={{
-                    color: theme.colors.textMuted,
+                    color: theme.colors.chartLabel,
                     fontSize: 10,
                   }}
                   noOfSections={4}

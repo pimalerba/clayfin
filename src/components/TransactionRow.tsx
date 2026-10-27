@@ -34,8 +34,8 @@ export function TransactionRow({
   const theme = useAppTheme();
   const isIncome = transaction.type === 'income';
   const amountColor = isIncome
-    ? theme.colors.incomeDark
-    : theme.colors.expenseDark;
+    ? theme.colors.income
+    : theme.colors.expense;
   const sign = isIncome ? '+' : '-';
 
   const handleEditAction = (swipeableMethods: SwipeableMethods) => {

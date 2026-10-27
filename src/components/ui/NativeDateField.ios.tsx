@@ -32,7 +32,7 @@ function parseIsoDateLocalNoon(iso: string): Date {
 
 /**
  * Implementação iOS nativa de seleção de data usando `DatePicker` SwiftUI (`@expo/ui/swift-ui`),
- * que já vem incluído no Expo Go SDK 58.
+ * adaptado dinamicamente para modo claro ou escuro.
  */
 export function NativeDateField({
   label = 'Data',
@@ -70,11 +70,11 @@ export function NativeDateField({
         style={[
           styles.inputOuter,
           {
-            backgroundColor: theme.colors.surface,
+            backgroundColor: theme.colors.inputBackground,
             borderRadius: theme.radii.md,
             borderColor: errorMessage
               ? theme.colors.expense
-              : 'rgba(138, 111, 232, 0.18)',
+              : theme.colors.inputBorder,
           },
         ]}
       >
@@ -97,7 +97,7 @@ export function NativeDateField({
         <Host
           matchContents
           alignment="trailing"
-          colorScheme="light"
+          colorScheme={theme.isDark ? 'dark' : 'light'}
           seedColor={theme.colors.primary}
           style={styles.host}
         >
@@ -117,7 +117,7 @@ export function NativeDateField({
           style={[
             theme.typography.caption,
             styles.errorText,
-            { color: theme.colors.expenseDark },
+            { color: theme.colors.expense },
           ]}
         >
           {errorMessage}

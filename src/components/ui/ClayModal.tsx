@@ -59,14 +59,23 @@ export function ClayModal({
               styles.sheet,
               theme.shadows.lg,
               {
-                backgroundColor: theme.colors.background,
+                backgroundColor: theme.colors.surfaceElevated,
                 borderTopLeftRadius: theme.radii.xxl,
                 borderTopRightRadius: theme.radii.xxl,
                 borderTopColor: theme.colors.clayHighlight,
               },
             ]}
           >
-            <View style={styles.handlePill} />
+            <View
+              style={[
+                styles.handlePill,
+                {
+                  backgroundColor: theme.isDark
+                    ? 'rgba(255, 255, 255, 0.22)'
+                    : 'rgba(138, 111, 232, 0.25)',
+                },
+              ]}
+            />
 
             <View style={styles.headerRow}>
               <View style={styles.titleBlock}>
@@ -99,11 +108,11 @@ export function ClayModal({
                   >
                     <GlassSurface
                       interactive
-                      tintColor="rgba(122, 90, 248, 0.16)"
+                      tintColor={theme.isDark ? 'rgba(157, 133, 242, 0.20)' : 'rgba(122, 90, 248, 0.16)'}
                       borderRadius={theme.radii.pill}
                       style={styles.closeGlassBtn}
                     >
-                      <X size={20} color="#1E1633" strokeWidth={2.4} />
+                      <X size={20} color={theme.colors.textPrimary} strokeWidth={2.4} />
                     </GlassSurface>
                   </Pressable>
                 </GlassContainer>
@@ -117,6 +126,7 @@ export function ClayModal({
                     {
                       backgroundColor: theme.colors.surface,
                       borderRadius: theme.radii.pill,
+                      borderColor: theme.colors.border,
                     },
                   ]}
                 >
@@ -164,7 +174,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 5,
     borderRadius: 3,
-    backgroundColor: 'rgba(138, 111, 232, 0.25)',
     marginBottom: 12,
   },
   headerRow: {
@@ -183,7 +192,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(138, 111, 232, 0.16)',
   },
   closeGlassBtn: {
     width: 44,

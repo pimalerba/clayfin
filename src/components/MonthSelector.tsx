@@ -35,7 +35,7 @@ export function MonthSelector({
             >
               <ChevronLeft
                 size={20}
-                color="#1E1633"
+                color={theme.colors.textPrimary}
                 strokeWidth={2.4}
               />
             </GlassSurface>
@@ -65,7 +65,7 @@ export function MonthSelector({
               style={[
                 theme.typography.h3,
                 styles.highContrastText,
-                { color: '#1E1633', flexShrink: 1 },
+                { color: theme.colors.textPrimary, flexShrink: 1 },
               ]}
             >
               {formatMonthYearPtBR(selectedMonth)}
@@ -85,7 +85,7 @@ export function MonthSelector({
             >
               <ChevronRight
                 size={20}
-                color="#1E1633"
+                color={theme.colors.textPrimary}
                 strokeWidth={2.4}
               />
             </GlassSurface>
