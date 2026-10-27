@@ -1,4 +1,5 @@
-import { DatabaseSync } from 'node:sqlite';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { DatabaseSync } = require('node:sqlite');
 import type * as SQLite from 'expo-sqlite';
 
 jest.mock('expo-sqlite', () => ({

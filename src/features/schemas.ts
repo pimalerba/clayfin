@@ -89,3 +89,32 @@ export const contributionFormSchema = z.object({
 });
 
 export type ContributionFormData = z.infer<typeof contributionFormSchema>;
+
+export const recurringRuleFormSchema = z.object({
+  type: z.enum(['income', 'expense']),
+  amount_cents: z
+    .number({ required_error: 'Informe o valor.' })
+    .int('O valor deve ser inteiro.')
+    .positive('Informe um valor maior que R$ 0,00.'),
+  category_id: z.string().min(1, 'Escolha uma categoria.'),
+  description: z
+    .string()
+    .max(80, 'A descrição pode ter no máximo 80 caracteres.')
+    .optional(),
+  frequency: z.enum(['weekly', 'monthly', 'yearly']),
+  day_of_month: z.number().int().min(1).max(31).nullable().optional(),
+  weekday: z.number().int().min(0).max(6).nullable().optional(),
+  start_date: z
+    .string({ required_error: 'Informe a data de início.' })
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use o formato AAAA-MM-DD.'),
+  end_date: z
+    .string()
+    .optional()
+    .refine(
+      (val) => !val || val.trim() === '' || /^\d{4}-\d{2}-\d{2}$/.test(val.trim()),
+      'Data de término inválida. Use AAAA-MM-DD.'
+    ),
+  is_active: z.number().int().min(0).max(1).default(1),
+});
+
+export type RecurringRuleFormData = z.infer<typeof recurringRuleFormSchema>;

@@ -20,6 +20,7 @@ export default function MoreStackLayout() {
       }}
     >
       <Stack.Screen name="index" />
+      <Stack.Screen name="recurring" />
       <Stack.Screen name="goals" />
       <Stack.Screen name="reports" />
       <Stack.Screen name="settings" />

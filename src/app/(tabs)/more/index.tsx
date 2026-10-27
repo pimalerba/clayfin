@@ -7,6 +7,7 @@ import {
   ChevronRight,
   FolderKanban,
   PiggyBank,
+  Repeat,
   Settings,
   ShieldCheck,
 } from 'lucide-react-native';
@@ -14,6 +15,7 @@ import { useAppTheme } from '@/theme';
 import {
   useAvailableAccountBalance,
   useGoals,
+  useRecurringRules,
   useWindowClass,
 } from '@/hooks';
 import { ClayCard } from '@/components/ui';
@@ -26,7 +28,10 @@ export default function MoreScreen() {
   useScrollToTop(scrollRef as any);
 
   const { data: goals = [] } = useGoals();
+  const { data: recurringRules = [] } = useRecurringRules();
   const { data: availableAccountCents = 0 } = useAvailableAccountBalance();
+
+  const activeRulesCount = recurringRules.filter((r) => r.is_active === 1).length;
 
   const totalSavedInGoals = goals.reduce(
     (acc, g) => acc + Math.max(0, g.current_cents),
@@ -108,6 +113,42 @@ export default function MoreScreen() {
               >
                 Disponível em conta para guardar:{' '}
                 {formatCentsToBRL(Math.max(0, availableAccountCents))}
+              </Text>
+            </View>
+            <ChevronRight size={20} color={theme.colors.textMuted} />
+          </View>
+        </ClayCard>
+
+        <ClayCard
+          radius="xl"
+          onPress={() => router.push('/(tabs)/more/recurring' as any)}
+          style={styles.menuCard}
+        >
+          <View style={styles.menuRow}>
+            <View
+              style={[
+                styles.iconBox,
+                { backgroundColor: theme.colors.primaryLight },
+              ]}
+            >
+              <Repeat size={24} color={theme.colors.primary} />
+            </View>
+            <View style={styles.textCol}>
+              <Text
+                style={[
+                  theme.typography.h3,
+                  { color: theme.colors.textPrimary },
+                ]}
+              >
+                Transações Recorrentes
+              </Text>
+              <Text
+                style={[
+                  theme.typography.bodySmall,
+                  { color: theme.colors.textSecondary },
+                ]}
+              >
+                {activeRulesCount} regra(s) ativa(s) • Contas fixas e salários
               </Text>
             </View>
             <ChevronRight size={20} color={theme.colors.textMuted} />

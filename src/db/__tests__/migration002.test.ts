@@ -1,4 +1,5 @@
-import { DatabaseSync } from 'node:sqlite';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { DatabaseSync } = require('node:sqlite');
 import { migration001Initial } from '../migrations/001_initial';
 import { migration002Recurring } from '../migrations/002_recurring';
 
